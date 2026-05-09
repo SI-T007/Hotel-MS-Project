@@ -4,250 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Sign In — Hotel Management System</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <style>
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-    :root {
-      --bg-dark: #1a2744;
-      --bg-darker: #131d38;
-      --primary: #4f6ef7;
-      --primary-hover: #3d5ce8;
-      --white: #ffffff;
-      --card-bg: #ffffff;
-      --input-border: #dde1f0;
-      --input-bg: #f8f9fd;
-      --input-focus: #4f6ef7;
-      --text: #1a1d2e;
-      --text-muted: #8b8fa8;
-      --text-light: rgba(255,255,255,0.55);
-      --text-light2: rgba(255,255,255,0.75);
-      --radius: 14px;
-      --radius-sm: 9px;
-      --shadow: 0 20px 60px rgba(0,0,0,0.25);
-    }
-
-    body {
-      font-family: 'DM Sans', sans-serif;
-      background: var(--bg-dark);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 24px 16px;
-      position: relative;
-      overflow: hidden;
-    }
-
-    /* subtle background pattern */
-    body::before {
-      content: '';
-      position: fixed;
-      inset: 0;
-      background:
-        radial-gradient(ellipse 80% 60% at 20% 10%, rgba(79,110,247,0.12) 0%, transparent 60%),
-        radial-gradient(ellipse 60% 50% at 80% 90%, rgba(79,110,247,0.08) 0%, transparent 60%);
-      pointer-events: none;
-    }
-
-    /* ── TOP HEADER (icon + name) ── */
-    .login-header {
-      text-align: center;
-      margin-bottom: 28px;
-      position: relative;
-      z-index: 1;
-    }
-
-    .app-icon {
-      width: 62px; height: 62px;
-      background: var(--primary);
-      border-radius: 18px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 16px;
-      box-shadow: 0 8px 24px rgba(79,110,247,0.4);
-    }
-    .app-icon svg {
-      width: 30px; height: 30px;
-      color: #fff;
-    }
-
-    .app-name {
-      font-size: 26px;
-      font-weight: 700;
-      color: var(--white);
-      letter-spacing: -.5px;
-    }
-
-    .app-tagline {
-      font-size: 14px;
-      color: var(--text-light2);
-      margin-top: 4px;
-      font-weight: 400;
-    }
-
-    /* ── CARD ── */
-    .login-card {
-      background: var(--card-bg);
-      border-radius: var(--radius);
-      padding: 36px 32px 32px;
-      width: 100%;
-      max-width: 400px;
-      box-shadow: var(--shadow);
-      position: relative;
-      z-index: 1;
-    }
-
-    /* ── FORM ── */
-    .form-group {
-      margin-bottom: 18px;
-    }
-
-    .form-label {
-      display: block;
-      font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .7px;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin-bottom: 7px;
-    }
-
-    .input-wrap {
-      position: relative;
-    }
-
-    .form-input {
-      width: 100%;
-      padding: 11px 14px;
-      background: var(--input-bg);
-      border: 1.5px solid var(--input-border);
-      border-radius: var(--radius-sm);
-      font-size: 14px;
-      font-family: 'DM Sans', sans-serif;
-      color: var(--text);
-      outline: none;
-      transition: border-color .2s, box-shadow .2s, background .2s;
-    }
-    .form-input::placeholder { color: #c0c4d8; }
-    .form-input:focus {
-      border-color: var(--input-focus);
-      background: #fff;
-      box-shadow: 0 0 0 3px rgba(79,110,247,0.12);
-    }
-
-    /* password toggle */
-    .pw-toggle {
-      position: absolute;
-      right: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--text-muted);
-      display: flex;
-      align-items: center;
-      padding: 0;
-    }
-    .pw-toggle:hover { color: var(--text); }
-    .pw-toggle svg { width: 17px; height: 17px; }
-    .form-input.has-toggle { padding-right: 40px; }
-
-    /* ── SUBMIT BTN ── */
-    .btn-signin {
-      width: 100%;
-      padding: 13px;
-      background: var(--primary);
-      color: #fff;
-      border: none;
-      border-radius: var(--radius-sm);
-      font-size: 15px;
-      font-weight: 600;
-      font-family: 'DM Sans', sans-serif;
-      cursor: pointer;
-      margin-top: 8px;
-      transition: background .2s, transform .15s, box-shadow .2s;
-      box-shadow: 0 4px 14px rgba(79,110,247,0.35);
-      letter-spacing: .1px;
-    }
-    .btn-signin:hover {
-      background: var(--primary-hover);
-      box-shadow: 0 6px 18px rgba(79,110,247,0.45);
-    }
-    .btn-signin:active { transform: scale(.98); }
-
-    /* ── FOOTER LINKS ── */
-    .login-footer {
-      margin-top: 24px;
-      text-align: center;
-      position: relative;
-      z-index: 1;
-    }
-
-    .request-access {
-      font-size: 13.5px;
-      color: var(--text-light2);
-    }
-    .request-access a {
-      color: #fff;
-      font-weight: 600;
-      text-decoration: none;
-    }
-    .request-access a:hover { text-decoration: underline; }
-
-    /* language selector */
-    .lang-select-wrap {
-      margin-top: 16px;
-      display: flex;
-      justify-content: center;
-    }
-
-    .lang-select {
-      appearance: none;
-      -webkit-appearance: none;
-      background: rgba(255,255,255,0.12);
-      border: 1px solid rgba(255,255,255,0.2);
-      color: var(--text-light2);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 13px;
-      padding: 6px 28px 6px 14px;
-      border-radius: 20px;
-      cursor: pointer;
-      outline: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.6)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
-      background-repeat: no-repeat;
-      background-position: right 10px center;
-    }
-    .lang-select option { background: var(--bg-darker); color: #fff; }
-
-    /* ── RESPONSIVE ── */
-    @media (max-width: 440px) {
-      .login-card { padding: 28px 22px 26px; }
-      .app-name { font-size: 22px; }
-      .app-icon { width: 54px; height: 54px; border-radius: 15px; }
-      .app-icon svg { width: 26px; height: 26px; }
-    }
-
-    @media (max-width: 320px) {
-      .login-card { padding: 22px 16px 20px; }
-    }
-  </style>
+  <link rel="stylesheet" href="style.css" />
 </head>
-<body>
+<body class="layout-auth">
 
-  <!-- Header -->
-  <div class="login-header">
+  <div class="auth-header">
     <div class="app-icon">
-      <!-- Hotel building icon -->
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
         <rect x="2" y="7" width="20" height="15" rx="1"/>
         <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
-        <line x1="12" y1="12" x2="12" y2="12.01"/>
         <path d="M8 12h.01M16 12h.01M8 16h.01M16 16h.01M12 16h.01"/>
       </svg>
     </div>
@@ -255,36 +20,19 @@
     <div class="app-tagline">Sign in to your workspace</div>
   </div>
 
-  <!-- Card -->
-  <div class="login-card">
+  <div class="auth-card">
     <form onsubmit="handleLogin(event)">
 
       <div class="form-group">
         <label class="form-label" for="email">Email Address</label>
-        <div class="input-wrap">
-          <input
-            id="email"
-            type="email"
-            class="form-input"
-            placeholder="you@example.com"
-            autocomplete="email"
-            required
-          />
-        </div>
+        <input id="email" type="email" class="form-input" placeholder="you@example.com" autocomplete="email" required />
       </div>
 
       <div class="form-group">
         <label class="form-label" for="password">Password</label>
         <div class="input-wrap">
-          <input
-            id="password"
-            type="password"
-            class="form-input has-toggle"
-            placeholder="••••••••"
-            autocomplete="current-password"
-            required
-          />
-          <button type="button" class="pw-toggle" onclick="togglePassword()" id="pwToggle" title="Show/hide password">
+          <input id="password" type="password" class="form-input has-toggle" placeholder="••••••••" autocomplete="current-password" required />
+          <button type="button" class="pw-toggle" onclick="togglePassword()" title="Show/hide password">
             <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
               <circle cx="12" cy="12" r="3"/>
@@ -293,16 +41,12 @@
         </div>
       </div>
 
-      <button type="submit" class="btn-signin">Sign in</button>
-
+      <button type="submit" class="btn-auth" id="submitBtn">Sign in</button>
     </form>
   </div>
 
-  <!-- Footer -->
-  <div class="login-footer">
-    <div class="request-access">
-      Interested in HMS? <a href="#">Request access</a>
-    </div>
+  <div class="auth-footer">
+    <p>Interested in HMS? <a href="#">Request access</a></p>
     <div class="lang-select-wrap">
       <select class="lang-select">
         <option value="en">English</option>
@@ -312,37 +56,24 @@
   </div>
 
   <script>
-    // Password show/hide
     function togglePassword() {
-      const input = document.getElementById('password');
-      const icon  = document.getElementById('eyeIcon');
-      if (input.type === 'password') {
-        input.type = 'text';
-        icon.innerHTML = `
-          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-          <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-          <line x1="1" y1="1" x2="23" y2="23"/>
-        `;
+      const inp  = document.getElementById('password');
+      const icon = document.getElementById('eyeIcon');
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
       } else {
-        input.type = 'password';
-        icon.innerHTML = `
-          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
-          <circle cx="12" cy="12" r="3"/>
-        `;
+        inp.type = 'password';
+        icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
       }
     }
-
-    // Form submit
     function handleLogin(e) {
       e.preventDefault();
-      const btn = e.target.querySelector('.btn-signin');
+      const btn = e.target.querySelector('.btn-auth');
       btn.textContent = 'Signing in…';
       btn.disabled = true;
-      setTimeout(() => {
-        window.location.href = 'dashboard.html';
-      }, 800);
+      setTimeout(() => { window.location.href = 'dashboard.html'; }, 800);
     }
   </script>
-
 </body>
 </html>

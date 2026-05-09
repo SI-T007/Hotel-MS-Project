@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Create Account — Hotel Management System</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    body.layout-auth {
+      justify-content: flex-start;
+      overflow-y: auto;
+      padding: 40px 16px 40px;
+    }
+
+    .invite-banner {
+      background: var(--primary-light);
+      border: 1px solid #c7d0fc;
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      margin-bottom: 22px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+    .invite-email { font-size: 13.5px; font-weight: 700; color: var(--primary); }
+    .invite-sub   { font-size: 11.5px; color: var(--text-muted); margin-top: 1px; }
+    .invite-badge {
+      background: var(--primary); color: #fff;
+      font-size: 11px; font-weight: 700;
+      padding: 3px 10px; border-radius: 20px;
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .card-heading { font-size: 18px; font-weight: 700; color: var(--text); margin-bottom: 4px; letter-spacing: -.3px; }
+    .card-sub     { font-size: 13px; color: var(--text-muted); margin-bottom: 22px; }
+    .signin-link  { text-align: center; margin-top: 16px; font-size: 13px; color: var(--text-muted); }
+    .signin-link a { color: var(--primary); font-weight: 600; }
+    .signin-link a:hover { text-decoration: underline; }
+
+    .success-screen { display: none; text-align: center; padding: 8px 0 4px; }
+    .success-icon {
+      width: 58px; height: 58px; background: var(--green-light);
+      border-radius: 50%; display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 18px;
+    }
+    .success-icon svg { width: 26px; height: 26px; color: var(--green); }
+    .success-title { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 8px; letter-spacing: -.3px; }
+    .success-msg   { font-size: 13.5px; color: var(--text-muted); line-height: 1.55; margin-bottom: 22px; }
+    .error-text    { font-size: 12px; color: var(--red); margin-top: 5px; display: none; }
+  </style>
+</head>
+<body class="layout-auth">
+
+  <div class="auth-header">
+    <div class="app-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="7" width="20" height="15" rx="1"/>
+        <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+        <path d="M8 12h.01M16 12h.01M8 16h.01M16 16h.01M12 16h.01"/>
+      </svg>
+    </div>
+    <div class="app-name">HMS Platform</div>
+    <div class="app-tagline">Create your account to join the team.</div>
+  </div>
+
+  <div class="auth-card">
+
+    <div class="invite-banner">
+      <div>
+        <div class="invite-email">raja@gmail.com</div>
+        <div class="invite-sub">Front desk — reservations &amp; guest management</div>
+      </div>
+      <span class="invite-badge">FrontDesk</span>
+    </div>
+
+    <!-- Form -->
+    <div id="formView">
+      <div class="card-heading">You're invited!</div>
+      <div class="card-sub">Create your account to join the team.</div>
+
+      <form onsubmit="handleRegister(event)">
+        <div class="form-group">
+          <label class="form-label" for="fullName">Full Name *</label>
+          <input id="fullName" type="text" class="form-input" placeholder="Jane Smith" autocomplete="name" required />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regEmail">Email</label>
+          <input id="regEmail" type="email" class="form-input" value="raja@gmail.com" readonly
+            style="background:#f0f2ff; color:var(--text-muted); cursor:not-allowed;" />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="pw1">Password *</label>
+          <div class="input-wrap">
+            <input id="pw1" type="password" class="form-input has-toggle" placeholder="Min. 8 characters" autocomplete="new-password" required minlength="8" />
+            <button type="button" class="pw-toggle" onclick="togglePw('pw1','eye1')">
+              <svg id="eye1" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="pw2">Confirm Password *</label>
+          <div class="input-wrap">
+            <input id="pw2" type="password" class="form-input has-toggle" placeholder="Repeat password" autocomplete="new-password" required minlength="8" />
+            <button type="button" class="pw-toggle" onclick="togglePw('pw2','eye2')">
+              <svg id="eye2" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
+          </div>
+          <div class="error-text" id="pwError">Passwords do not match.</div>
+        </div>
+
+        <button type="submit" class="btn-auth" id="submitBtn">Create Account &amp; Join</button>
+      </form>
+
+      <div class="signin-link">
+        Already have an account? <a href="login.html">Sign in</a>
+      </div>
+    </div>
+
+    <!-- Success -->
+    <div class="success-screen" id="successView">
+      <div class="success-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <div class="success-title">Account Created!</div>
+      <div class="success-msg">
+        Welcome to the team, <strong id="welcomeName"></strong>.<br/>
+        Your account is ready. Sign in to get started.
+      </div>
+      <a href="login.html" class="btn-auth" style="display:block;text-align:center;text-decoration:none;margin-top:0;">
+        Go to Sign In
+      </a>
+    </div>
+
+  </div>
+
+  <div class="auth-footer">
+    <div class="lang-select-wrap">
+      <select class="lang-select">
+        <option value="en">English</option>
+        <option value="ur">اردو</option>
+      </select>
+    </div>
+  </div>
+
+  <script>
+    function togglePw(inputId, iconId) {
+      const inp  = document.getElementById(inputId);
+      const icon = document.getElementById(iconId);
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        icon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>';
+      } else {
+        inp.type = 'password';
+        icon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+      }
+    }
+
+    function handleRegister(e) {
+      e.preventDefault();
+      const pw1  = document.getElementById('pw1').value;
+      const pw2  = document.getElementById('pw2').value;
+      const err  = document.getElementById('pwError');
+      const btn  = document.getElementById('submitBtn');
+      const name = document.getElementById('fullName').value.trim().split(' ')[0];
+
+      if (pw1 !== pw2) { err.style.display = 'block'; return; }
+      err.style.display = 'none';
+      btn.textContent = 'Creating account…';
+      btn.disabled = true;
+      setTimeout(() => {
+        document.getElementById('welcomeName').textContent = name || 'there';
+        document.getElementById('formView').style.display    = 'none';
+        document.getElementById('successView').style.display = 'block';
+      }, 900);
+    }
+  </script>
+</body>
+</html>

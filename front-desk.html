@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Front Desk — Hotel Management System</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Filter chips ── */
+    .fd-filter-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .fd-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      border: 1.5px solid transparent;
+      transition: all .18s;
+      background: var(--white);
+      color: var(--text-muted);
+      border-color: var(--border);
+    }
+    .fd-chip .chip-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .fd-chip:hover     { border-color: var(--text-muted); color: var(--text); }
+    .fd-chip.active    { background: var(--text); color: #fff; border-color: var(--text); }
+    .fd-chip.c-avail   { border-color: var(--green);  color: #15803d; }
+    .fd-chip.c-avail:hover, .fd-chip.c-avail.active  { background: var(--green);  color: #fff; border-color: var(--green); }
+    .fd-chip.c-occ     { border-color: var(--blue);   color: var(--blue); }
+    .fd-chip.c-occ:hover, .fd-chip.c-occ.active       { background: var(--blue);   color: #fff; border-color: var(--blue); }
+    .fd-chip.c-dirty   { border-color: var(--orange); color: #b45309; }
+    .fd-chip.c-dirty:hover, .fd-chip.c-dirty.active   { background: var(--orange); color: #fff; border-color: var(--orange); }
+    .fd-chip.c-clean   { border-color: var(--teal);   color: #0e7490; }
+    .fd-chip.c-clean:hover, .fd-chip.c-clean.active   { background: var(--teal);   color: #fff; border-color: var(--teal); }
+    .fd-chip.c-oo      { border-color: var(--red);    color: var(--red); }
+    .fd-chip.c-oo:hover, .fd-chip.c-oo.active         { background: var(--red);    color: #fff; border-color: var(--red); }
+
+    .chip-count {
+      background: rgba(0,0,0,.08);
+      border-radius: 10px;
+      padding: 0 6px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    /* ── Floor sections ── */
+    .floor-section { margin-bottom: 28px; }
+    .floor-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .7px;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .floor-label::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Room cards grid ── */
+    .rooms-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    .room-card {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      cursor: pointer;
+      transition: all .18s;
+      box-shadow: var(--shadow-sm);
+    }
+    .room-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow);
+    }
+
+    /* status border colors */
+    .room-card.s-available { border-color: #bbf7d0; }
+    .room-card.s-occupied  { border-color: #bfdbfe; }
+    .room-card.s-dirty     { border-color: #fde68a; }
+    .room-card.s-cleaning  { border-color: #99f6e4; }
+    .room-card.s-outoforder{ border-color: #fecaca; }
+
+    .room-number {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--text);
+      letter-spacing: -.4px;
+      margin-bottom: 2px;
+    }
+    .room-type {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 14px;
+    }
+
+    .room-status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 600;
+    }
+    .room-status-badge .sd {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+    }
+    .rsb-available  { background: var(--green-light);  color: #15803d; }
+    .rsb-available .sd  { background: var(--green); }
+    .rsb-occupied   { background: var(--blue-light);   color: var(--blue); }
+    .rsb-occupied .sd   { background: var(--blue); }
+    .rsb-dirty      { background: var(--orange-light); color: #b45309; }
+    .rsb-dirty .sd      { background: var(--orange); }
+    .rsb-cleaning   { background: #ccfbf1;             color: #0e7490; }
+    .rsb-cleaning .sd   { background: var(--teal); }
+    .rsb-outoforder { background: var(--red-light);    color: var(--red); }
+    .rsb-outoforder .sd { background: var(--red); }
+
+    /* ── Update Room Status Modal ── */
+    .modal.modal-sm { max-width: 380px; }
+
+    .status-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 4px; }
+
+    .status-option {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 11px 14px;
+      border-radius: var(--radius-sm);
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      transition: all .15s;
+      background: var(--white);
+    }
+    .status-option:hover   { border-color: var(--text-muted); background: var(--bg); }
+    .status-option.selected {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+
+    .status-option-left {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text);
+    }
+    .so-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+    .selected-label {
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .rooms-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+    }
+    @media (max-width: 580px) {
+      .rooms-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .fd-filter-bar { gap: 6px; }
+    }
+    @media (max-width: 360px) {
+      .rooms-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body class="layout-app">
+
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    </div>
+    <span class="brand-name">Royal Brangsa</span>
+  </div>
+
+  <div class="sidebar-section-label">Operations</div>
+  <a href="index.html"    class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    Dashboard
+  </a>
+  <a href="front-desk.html"   class="nav-item active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+    Front Desk
+  </a>
+  <a href="bookings.html"     class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+    Bookings
+  </a>
+  <a href="new-booking.html"  class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    New Booking
+  </a>
+  <a href="guests.html"       class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Guests
+  </a>
+  <a href="rooms-floors.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Rooms &amp; Floors
+  </a>
+
+  <div class="sidebar-section-label">Finance</div>
+  <a href="invoices.html"  class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    Invoices
+  </a>
+  <a href="payments.html"  class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+    Payments
+  </a>
+  <a href="expenses.html"  class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    Expenses
+  </a>
+  <a href="cashflow.html"  class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+    Cash Flow
+  </a>
+
+  <div class="sidebar-section-label">Reports</div>
+  <a href="analytics.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    Analytics &amp; Performance
+  </a>
+
+  <div class="sidebar-bottom">
+    <a href="staff-management.html"  class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Staff Management
+    </a>
+    <a href="business-settings.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+      Business Settings
+    </a>
+    <div class="user-card">
+      <div class="user-avatar">K</div>
+      <div class="user-info">
+        <div class="user-name">Kacho Karman</div>
+        <div class="user-role">Manager</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" onclick="toggleSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <span class="topbar-title">Front Desk</span>
+    </div>
+    <div class="topbar-right">
+      <a href="new-booking.html" class="btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Booking
+      </a>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- Filter chips -->
+    <div class="fd-filter-bar">
+      <div class="fd-chip active" onclick="filterRooms('all', this)">
+        All <span class="chip-count">8</span>
+      </div>
+      <div class="fd-chip c-avail" onclick="filterRooms('available', this)">
+        <span class="chip-dot" style="background:var(--green)"></span>
+        Available <span class="chip-count">3</span>
+      </div>
+      <div class="fd-chip c-occ" onclick="filterRooms('occupied', this)">
+        <span class="chip-dot" style="background:var(--blue)"></span>
+        Occupied <span class="chip-count">2</span>
+      </div>
+      <div class="fd-chip c-dirty" onclick="filterRooms('dirty', this)">
+        <span class="chip-dot" style="background:var(--orange)"></span>
+        Dirty <span class="chip-count">2</span>
+      </div>
+      <div class="fd-chip c-clean" onclick="filterRooms('cleaning', this)">
+        <span class="chip-dot" style="background:var(--teal)"></span>
+        Cleaning <span class="chip-count">1</span>
+      </div>
+      <div class="fd-chip c-oo" onclick="filterRooms('outoforder', this)">
+        <span class="chip-dot" style="background:var(--red)"></span>
+        Out of Order <span class="chip-count">0</span>
+      </div>
+    </div>
+
+    <!-- FLOOR 1 -->
+    <div class="floor-section" data-floor="1">
+      <div class="floor-label">Floor 1 &nbsp; 3 Rooms</div>
+      <div class="rooms-grid">
+        <div class="room-card s-available" data-status="available" onclick="openModal(this, '101', 'Family Room', 'available')">
+          <div class="room-number">101</div>
+          <div class="room-type">Family Room</div>
+          <span class="room-status-badge rsb-available"><span class="sd"></span>Available</span>
+        </div>
+        <div class="room-card s-cleaning" data-status="cleaning" onclick="openModal(this, '102', 'Couple Room', 'cleaning')">
+          <div class="room-number">102</div>
+          <div class="room-type">Couple Room</div>
+          <span class="room-status-badge rsb-cleaning"><span class="sd"></span>Cleaning</span>
+        </div>
+        <div class="room-card s-dirty" data-status="dirty" onclick="openModal(this, '103', 'Dpluex room', 'dirty')">
+          <div class="room-number">103</div>
+          <div class="room-type">Dpluex room</div>
+          <span class="room-status-badge rsb-dirty"><span class="sd"></span>Dirty</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FLOOR 2 -->
+    <div class="floor-section" data-floor="2">
+      <div class="floor-label">Floor 2 &nbsp; 2 Rooms</div>
+      <div class="rooms-grid">
+        <div class="room-card s-occupied" data-status="occupied" onclick="openModal(this, '201', 'Luxury Room', 'occupied')">
+          <div class="room-number">201</div>
+          <div class="room-type">Luxury Room</div>
+          <span class="room-status-badge rsb-occupied"><span class="sd"></span>Occupied</span>
+        </div>
+        <div class="room-card s-available" data-status="available" onclick="openModal(this, '202', 'Duble room', 'available')">
+          <div class="room-number">202</div>
+          <div class="room-type">Duble room</div>
+          <span class="room-status-badge rsb-available"><span class="sd"></span>Available</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FLOOR 3 -->
+    <div class="floor-section" data-floor="3">
+      <div class="floor-label">Floor 3 &nbsp; 3 Rooms</div>
+      <div class="rooms-grid">
+        <div class="room-card s-dirty" data-status="dirty" onclick="openModal(this, '301', 'Couple Room', 'dirty')">
+          <div class="room-number">301</div>
+          <div class="room-type">Couple Room</div>
+          <span class="room-status-badge rsb-dirty"><span class="sd"></span>Dirty</span>
+        </div>
+        <div class="room-card s-occupied" data-status="occupied" onclick="openModal(this, '302', 'Dpluex room', 'occupied')">
+          <div class="room-number">302</div>
+          <div class="room-type">Dpluex room</div>
+          <span class="room-status-badge rsb-occupied"><span class="sd"></span>Occupied</span>
+        </div>
+        <div class="room-card s-available" data-status="available" onclick="openModal(this, '303', 'Luxury Room', 'available')">
+          <div class="room-number">303</div>
+          <div class="room-type">Luxury Room</div>
+          <span class="room-status-badge rsb-available"><span class="sd"></span>Available</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── MODAL: Update Room Status ── -->
+<div class="modal-overlay" id="statusModal" onclick="closeModalOutside(event)">
+  <div class="modal modal-sm">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modalRoomTitle">Room 301</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">Update room status</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="status-options">
+        <div class="status-option" data-val="available" onclick="selectStatus(this)">
+          <div class="status-option-left">
+            <span class="so-dot" style="background:var(--green)"></span>
+            Available
+          </div>
+        </div>
+        <div class="status-option" data-val="occupied" onclick="selectStatus(this)">
+          <div class="status-option-left">
+            <span class="so-dot" style="background:var(--blue)"></span>
+            Occupied
+          </div>
+        </div>
+        <div class="status-option" data-val="dirty" onclick="selectStatus(this)">
+          <div class="status-option-left">
+            <span class="so-dot" style="background:var(--orange)"></span>
+            Dirty
+          </div>
+        </div>
+        <div class="status-option" data-val="cleaning" onclick="selectStatus(this)">
+          <div class="status-option-left">
+            <span class="so-dot" style="background:var(--teal)"></span>
+            Cleaning
+          </div>
+        </div>
+        <div class="status-option" data-val="outoforder" onclick="selectStatus(this)">
+          <div class="status-option-left">
+            <span class="so-dot" style="background:var(--red)"></span>
+            Out of Order
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-primary" onclick="confirmStatus()">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Sidebar
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('open');
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('open');
+  }
+
+  // Filter chips
+  function filterRooms(status, el) {
+    document.querySelectorAll('.fd-chip').forEach(c => c.classList.remove('active'));
+    el.classList.add('active');
+    document.querySelectorAll('.room-card').forEach(card => {
+      card.style.display = (status === 'all' || card.dataset.status === status) ? '' : 'none';
+    });
+  }
+
+  // Modal state
+  let currentCard   = null;
+  let selectedStatus = null;
+
+  const statusConfig = {
+    available:  { cls: 's-available',  badgeCls: 'rsb-available',  label: 'Available',    color: 'var(--green)' },
+    occupied:   { cls: 's-occupied',   badgeCls: 'rsb-occupied',   label: 'Occupied',     color: 'var(--blue)'  },
+    dirty:      { cls: 's-dirty',      badgeCls: 'rsb-dirty',      label: 'Dirty',        color: 'var(--orange)'},
+    cleaning:   { cls: 's-cleaning',   badgeCls: 'rsb-cleaning',   label: 'Cleaning',     color: 'var(--teal)'  },
+    outoforder: { cls: 's-outoforder', badgeCls: 'rsb-outoforder', label: 'Out of Order', color: 'var(--red)'   },
+  };
+
+  function openModal(card, roomNum, roomType, currentStatus) {
+    currentCard    = card;
+    selectedStatus = currentStatus;
+    document.getElementById('modalRoomTitle').textContent = 'Room ' + roomNum;
+
+    // Reset options, mark current
+    document.querySelectorAll('.status-option').forEach(opt => {
+      opt.classList.remove('selected');
+      opt.querySelector('.selected-label')?.remove();
+      if (opt.dataset.val === currentStatus) {
+        opt.classList.add('selected');
+        const lbl = document.createElement('span');
+        lbl.className = 'selected-label';
+        lbl.textContent = 'Selected';
+        opt.appendChild(lbl);
+      }
+    });
+
+    document.getElementById('statusModal').classList.add('open');
+  }
+
+  function selectStatus(opt) {
+    document.querySelectorAll('.status-option').forEach(o => {
+      o.classList.remove('selected');
+      o.querySelector('.selected-label')?.remove();
+    });
+    opt.classList.add('selected');
+    const lbl = document.createElement('span');
+    lbl.className = 'selected-label';
+    lbl.textContent = 'Selected';
+    opt.appendChild(lbl);
+    selectedStatus = opt.dataset.val;
+  }
+
+  function confirmStatus() {
+    if (!currentCard || !selectedStatus) return;
+    const cfg = statusConfig[selectedStatus];
+
+    // Update card classes & badge
+    Object.values(statusConfig).forEach(c => currentCard.classList.remove(c.cls));
+    currentCard.classList.add(cfg.cls);
+    currentCard.dataset.status = selectedStatus;
+
+    const badge = currentCard.querySelector('.room-status-badge');
+    badge.className = 'room-status-badge ' + cfg.badgeCls;
+    badge.innerHTML = '<span class="sd"></span>' + cfg.label;
+
+    closeModal();
+  }
+
+  function closeModal() {
+    document.getElementById('statusModal').classList.remove('open');
+    currentCard = null;
+  }
+
+  function closeModalOutside(e) {
+    if (e.target === document.getElementById('statusModal')) closeModal();
+  }
+</script>
+</body>
+</html>
