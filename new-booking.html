@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>New Booking — Hotel Management System</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    /* ── Two-column layout ── */
+    .booking-layout {
+      display: grid;
+      grid-template-columns: 1fr 280px;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .section-title {
+      font-size: 11px; font-weight: 700; letter-spacing: .7px;
+      text-transform: uppercase; color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+
+    /* Guest picker */
+    .guest-picker {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      background: var(--white);
+    }
+    .guest-avatar-sm {
+      width: 30px; height: 30px; border-radius: 50%;
+      background: var(--primary-light);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: var(--primary); flex-shrink: 0;
+    }
+    .guest-picker-info { flex: 1; }
+    .guest-picker-name  { font-size: 13.5px; font-weight: 600; color: var(--text); }
+    .guest-picker-email { font-size: 12px; color: var(--text-muted); }
+    .btn-change {
+      padding: 5px 12px; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); background: var(--white);
+      font-size: 12px; font-weight: 600; color: var(--text);
+      cursor: pointer; font-family: inherit; white-space: nowrap;
+    }
+    .btn-change:hover { background: var(--bg); }
+
+    .guest-empty {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 14px;
+      border: 1.5px dashed var(--border); border-radius: var(--radius-sm);
+      background: var(--bg);
+    }
+    .guest-empty-text { font-size: 13px; color: var(--text-muted); }
+    .btn-add-guest {
+      padding: 6px 14px; background: var(--primary); color: #fff;
+      border: none; border-radius: var(--radius-sm);
+      font-size: 12px; font-weight: 600; cursor: pointer; font-family: inherit;
+    }
+    .btn-add-guest:hover { opacity: .9; }
+
+    /* Date row */
+    .date-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    /* Nights badge */
+    .nights-label {
+      font-size: 12px; color: var(--text-muted); margin-top: 6px;
+    }
+
+    /* Form card */
+    .form-card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px; margin-bottom: 16px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* Summary card */
+    .summary-card {
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+      box-shadow: var(--shadow-sm); position: sticky; top: 72px;
+    }
+    .summary-title {
+      font-size: 14px; font-weight: 700; color: var(--text);
+      margin-bottom: 16px;
+    }
+    .summary-row {
+      display: flex; justify-content: space-between;
+      font-size: 13px; padding: 5px 0;
+      border-bottom: 1px solid var(--bg);
+    }
+    .summary-row:last-of-type { border-bottom: none; }
+    .summary-label { color: var(--text-muted); }
+    .summary-value { font-weight: 500; color: var(--text); }
+
+    .summary-error {
+      background: var(--red-light); color: var(--red);
+      font-size: 12px; font-weight: 600; padding: 8px 12px;
+      border-radius: var(--radius-sm); margin: 14px 0; text-align: center;
+    }
+    .summary-actions { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; }
+    .btn-create {
+      width: 100%; padding: 11px; background: var(--primary); color: #fff;
+      border: none; border-radius: var(--radius-sm);
+      font-size: 14px; font-weight: 600; cursor: pointer; font-family: inherit;
+      transition: opacity .18s;
+    }
+    .btn-create:hover { opacity: .9; }
+    .btn-cancel-full {
+      width: 100%; padding: 10px; background: var(--white); color: var(--text);
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;
+    }
+    .btn-cancel-full:hover { background: var(--bg); }
+
+    /* ── SELECT ROOMS MODAL ── */
+    .modal-rooms { max-width: 560px; }
+    .rooms-select-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    }
+    .room-pick-card {
+      border: 1.5px solid var(--border); border-radius: var(--radius-sm);
+      padding: 12px; cursor: pointer; transition: all .15s; position: relative;
+      background: var(--white);
+    }
+    .room-pick-card:hover { border-color: var(--primary); background: var(--primary-light); }
+    .room-pick-card.selected { border-color: var(--primary); background: var(--primary-light); }
+    .room-pick-card.selected::after {
+      content: '✓'; position: absolute; top: 8px; right: 8px;
+      width: 18px; height: 18px; background: var(--primary); color: #fff;
+      border-radius: 50%; font-size: 11px; font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .rp-number { font-size: 14px; font-weight: 700; color: var(--text); margin-bottom: 2px; }
+    .rp-type   { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .rp-price  { font-size: 12.5px; font-weight: 600; color: var(--primary); }
+    .rp-check  { display: none; }
+
+    /* ── ADD GUEST MODAL ── */
+    .modal-guest { max-width: 500px; }
+    .upload-photo-btn {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      width: 68px; height: 68px; border-radius: 50%;
+      border: 2px dashed var(--border); background: var(--bg);
+      cursor: pointer; gap: 4px; flex-shrink: 0;
+      transition: border-color .18s;
+    }
+    .upload-photo-btn:hover { border-color: var(--primary); }
+    .upload-photo-btn svg { width: 20px; height: 20px; color: var(--text-muted); }
+    .upload-photo-btn span { font-size: 9px; color: var(--text-muted); text-align: center; line-height: 1.2; }
+    .photo-row { display: flex; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
+    .photo-fields { flex: 1; }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .booking-layout { grid-template-columns: 1fr; }
+      .summary-card { position: static; }
+    }
+    @media (max-width: 520px) {
+      .date-row { grid-template-columns: 1fr; }
+      .rooms-select-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body class="layout-app">
+
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <span class="brand-name">Royal Brangsa</span>
+  </div>
+  <div class="sidebar-section-label">Operations</div>
+  <a href="index.html"    class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+  <a href="front-desk.html"   class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Front Desk</a>
+  <a href="bookings.html"     class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Bookings</a>
+  <a href="new-booking.html"  class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>New Booking</a>
+  <a href="guests.html"       class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Guests</a>
+  <a href="rooms-floors.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Rooms &amp; Floors</a>
+  <div class="sidebar-section-label">Finance</div>
+  <a href="invoices.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Invoices</a>
+  <a href="payments.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Payments</a>
+  <a href="expenses.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Expenses</a>
+  <a href="cashflow.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>Cash Flow</a>
+  <div class="sidebar-section-label">Reports</div>
+  <a href="analytics.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics &amp; Performance</a>
+  <div class="sidebar-bottom">
+    <a href="staff-management.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Staff Management</a>
+    <a href="business-settings.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/></svg>Business Settings</a>
+    <div class="user-card">
+      <div class="user-avatar">K</div>
+      <div class="user-info"><div class="user-name">Kacho Karman</div><div class="user-role">Manager</div></div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" onclick="toggleSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <span class="topbar-title">New Booking</span>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="page-header">
+      <h1>New Booking</h1>
+      <div class="sub">Create a new reservation</div>
+    </div>
+
+    <div class="booking-layout">
+
+      <!-- LEFT: Form -->
+      <div>
+
+        <!-- GUEST -->
+        <div class="form-card">
+          <div class="section-title">Guest</div>
+          <div id="guestEmpty">
+            <div class="guest-empty">
+              <span class="guest-empty-text">No guest selected</span>
+              <button class="btn-add-guest" onclick="openGuestModal()">+ Add Guest</button>
+            </div>
+          </div>
+          <div id="guestSelected" style="display:none;">
+            <div class="guest-picker">
+              <div class="guest-avatar-sm" id="guestInitial">A</div>
+              <div class="guest-picker-info">
+                <div class="guest-picker-name" id="guestName">ashiq ali</div>
+                <div class="guest-picker-email" id="guestEmail">ali@gmail.com</div>
+              </div>
+              <button class="btn-change" onclick="openGuestModal()">Change</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- STAY DETAILS -->
+        <div class="form-card">
+          <div class="section-title">Stay Details</div>
+
+          <div class="form-group">
+            <label class="form-label">Property</label>
+            <select class="form-select" onchange="updateSummary()">
+              <option>Skardu Main Branch</option>
+              <option>Shigar branch</option>
+            </select>
+          </div>
+
+          <div class="date-row">
+            <div class="form-group">
+              <label class="form-label">Check-In</label>
+              <input type="date" class="form-input" id="checkinDate" onchange="calcNights()" />
+            </div>
+            <div class="form-group">
+              <label class="form-label">Check-Out</label>
+              <input type="date" class="form-input" id="checkoutDate" onchange="calcNights()" />
+            </div>
+          </div>
+          <div class="nights-label" id="nightsLabel">1 night</div>
+
+          <div class="form-group" style="margin-top:12px;">
+            <label class="form-label">Number of Guests</label>
+            <input type="number" class="form-input" id="numGuests" value="1" min="1" max="20" onchange="updateSummary()" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Channel</label>
+            <select class="form-select" id="channelSelect" onchange="updateSummary()">
+              <option>Walk In</option>
+              <option>WhatsApp</option>
+              <option>Booking.com</option>
+              <option>Phone</option>
+              <option>Expedia</option>
+              <option>Airbnb</option>
+              <option>Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Notes / Special Requests</label>
+            <textarea class="form-textarea" placeholder="Any special requests or notes..."></textarea>
+          </div>
+
+          <!-- Select Rooms btn -->
+          <button class="btn-primary" style="width:100%;justify-content:center;" onclick="openRoomsModal()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+            Select Rooms
+          </button>
+          <div id="selectedRoomsInfo" style="margin-top:10px;font-size:13px;color:var(--primary);font-weight:600;display:none;"></div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT: Summary -->
+      <div class="summary-card">
+        <div class="summary-title">Summary</div>
+        <div class="summary-row"><span class="summary-label">Guest</span>       <span class="summary-value" id="sumGuest">—</span></div>
+        <div class="summary-row"><span class="summary-label">Property</span>    <span class="summary-value">Skardu Main Branch</span></div>
+        <div class="summary-row"><span class="summary-label">Check-in</span>    <span class="summary-value" id="sumCheckin">—</span></div>
+        <div class="summary-row"><span class="summary-label">Check-out</span>   <span class="summary-value" id="sumCheckout">—</span></div>
+        <div class="summary-row"><span class="summary-label">Nights</span>      <span class="summary-value" id="sumNights">1</span></div>
+        <div class="summary-row"><span class="summary-label">Rooms</span>       <span class="summary-value" id="sumRooms">—</span></div>
+        <div class="summary-row"><span class="summary-label">No. of Guests</span><span class="summary-value" id="sumNumGuests">1</span></div>
+        <div class="summary-row"><span class="summary-label">Channel</span>     <span class="summary-value" id="sumChannel">Walk In</span></div>
+        <div class="summary-error" id="sumError">Please select a guest.</div>
+        <div class="summary-actions">
+          <button class="btn-cancel-full" onclick="history.back()">Cancel</button>
+          <button class="btn-create" onclick="createBooking()">Create Booking</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL 1: Add Guest
+═══════════════════════════════════════════ -->
+<div class="modal-overlay" id="guestModal" onclick="closeModalOutside(event,'guestModal')">
+  <div class="modal modal-guest">
+    <div class="modal-header">
+      <div class="modal-title">Add Guest</div>
+      <button class="modal-close" onclick="closeModal('guestModal')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="photo-row">
+        <div class="upload-photo-btn" onclick="document.getElementById('photoInput').click()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <span>Upload<br/>Photo</span>
+          <input type="file" id="photoInput" accept="image/*" style="display:none"/>
+        </div>
+        <div class="photo-fields" style="flex:1;">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">JPG, PNG or WebP — max 5 MB</div>
+          <div class="form-row">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">First Name *</label>
+              <input type="text" class="form-input" id="gFirstName" placeholder="First name" required />
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Last Name *</label>
+              <input type="text" class="form-input" id="gLastName" placeholder="Last name" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="gEmail" placeholder="guest@example.com" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <input type="tel" class="form-input" id="gPhone" placeholder="+1 555 0100" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Nationality</label>
+        <input type="text" class="form-input" id="gNationality" placeholder="e.g. Pakistani" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Identification — ID Type</label>
+        <select class="form-select" id="gIdType">
+          <option value="">— None —</option>
+          <option>Passport</option>
+          <option>National ID</option>
+          <option>Driving License</option>
+        </select>
+      </div>
+
+      <div id="gIdNumberWrap" style="display:none;" class="form-group">
+        <label class="form-label">ID Number</label>
+        <input type="text" class="form-input" id="gIdNumber" placeholder="ID number" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Address</label>
+        <input type="text" class="form-input" id="gAddress" placeholder="Street address" />
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">City</label>
+          <input type="text" class="form-input" id="gCity" placeholder="City" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Country</label>
+          <input type="text" class="form-input" id="gCountry" placeholder="Country" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="gNotes" placeholder="Optional notes..." style="min-height:60px;"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('guestModal')">Cancel</button>
+      <button class="btn-primary" onclick="saveGuest()">Add Guest</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     MODAL 2: Select Rooms
+═══════════════════════════════════════════ -->
+<div class="modal-overlay" id="roomsModal" onclick="closeModalOutside(event,'roomsModal')">
+  <div class="modal modal-rooms">
+    <div class="modal-header">
+      <div class="modal-title">Select Rooms</div>
+      <button class="modal-close" onclick="closeModal('roomsModal')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="rooms-select-grid">
+        <div class="room-pick-card" data-room="102" data-type="Couple Room" data-rate="2500" onclick="toggleRoom(this)">
+          <div class="rp-number">Room 102</div>
+          <div class="rp-type">Couple Room - Flo...</div>
+          <div class="rp-price">Rs 2,500/night</div>
+        </div>
+        <div class="room-pick-card" data-room="103" data-type="Dpluex room" data-rate="2000" onclick="toggleRoom(this)">
+          <div class="rp-number">Room 103</div>
+          <div class="rp-type">Dpluex room - Flo...</div>
+          <div class="rp-price">Rs 2,000/night</div>
+        </div>
+        <div class="room-pick-card" data-room="201" data-type="Luxury Room" data-rate="5000" onclick="toggleRoom(this)">
+          <div class="rp-number">Room 201</div>
+          <div class="rp-type">Luxury Room - Flo...</div>
+          <div class="rp-price">Rs 5,000/night</div>
+        </div>
+        <div class="room-pick-card" data-room="202" data-type="Duble room" data-rate="1500" onclick="toggleRoom(this)">
+          <div class="rp-number">Room 202</div>
+          <div class="rp-type">Duble room - Floor 2</div>
+          <div class="rp-price">Rs 1,500/night</div>
+        </div>
+        <div class="room-pick-card selected" data-room="301" data-type="Couple Room" data-rate="2500" onclick="toggleRoom(this)">
+          <div class="rp-number">Room 301</div>
+          <div class="rp-type">Couple Rooms - Flo...</div>
+          <div class="rp-price">Rs 2,500/night</div>
+        </div>
+        <div class="room-pick-card" data-room="303" data-type="Luxury Room" data-rate="5000" onclick="toggleRoom(this)">
+          <div class="rp-number">Room 303</div>
+          <div class="rp-type">Luxury Room - Flo...</div>
+          <div class="rp-price">Rs 5,000/night</div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeModal('roomsModal')">Cancel</button>
+      <button class="btn-primary" onclick="confirmRooms()">Confirm Rooms</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Init dates ──
+  const today    = new Date();
+  const tomorrow = new Date(today); tomorrow.setDate(today.getDate() + 1);
+  const fmt = d => d.toISOString().split('T')[0];
+  document.getElementById('checkinDate').value  = fmt(today);
+  document.getElementById('checkoutDate').value = fmt(tomorrow);
+
+  let selectedGuest = null;
+  let selectedRooms = ['301']; // default
+
+  // ── Nights calc ──
+  function calcNights() {
+    const ci = new Date(document.getElementById('checkinDate').value);
+    const co = new Date(document.getElementById('checkoutDate').value);
+    const n  = Math.max(1, Math.round((co - ci) / 86400000));
+    document.getElementById('nightsLabel').textContent = n + (n === 1 ? ' night' : ' nights');
+    document.getElementById('sumNights').textContent = n;
+    document.getElementById('sumCheckin').textContent  = document.getElementById('checkinDate').value;
+    document.getElementById('sumCheckout').textContent = document.getElementById('checkoutDate').value;
+  }
+  calcNights();
+
+  // ── Summary update ──
+  function updateSummary() {
+    document.getElementById('sumChannel').textContent    = document.getElementById('channelSelect').value;
+    document.getElementById('sumNumGuests').textContent  = document.getElementById('numGuests').value;
+  }
+
+  // ── Guest Modal ──
+  function openGuestModal() {
+    document.getElementById('guestModal').classList.add('open');
+  }
+
+  document.getElementById('gIdType').addEventListener('change', function() {
+    document.getElementById('gIdNumberWrap').style.display = this.value ? '' : 'none';
+  });
+
+  function saveGuest() {
+    const first = document.getElementById('gFirstName').value.trim();
+    const last  = document.getElementById('gLastName').value.trim();
+    const email = document.getElementById('gEmail').value.trim();
+    if (!first) { document.getElementById('gFirstName').focus(); return; }
+
+    const fullName = (first + ' ' + last).trim();
+    selectedGuest  = { name: fullName, email: email || 'No email' };
+
+    document.getElementById('guestInitial').textContent = first[0].toUpperCase();
+    document.getElementById('guestName').textContent    = fullName;
+    document.getElementById('guestEmail').textContent   = selectedGuest.email;
+    document.getElementById('guestEmpty').style.display    = 'none';
+    document.getElementById('guestSelected').style.display = '';
+    document.getElementById('sumGuest').textContent = fullName;
+    document.getElementById('sumError').style.display = 'none';
+
+    closeModal('guestModal');
+  }
+
+  // ── Rooms Modal ──
+  function openRoomsModal() {
+    document.getElementById('roomsModal').classList.add('open');
+  }
+
+  function toggleRoom(card) {
+    card.classList.toggle('selected');
+  }
+
+  function confirmRooms() {
+    const selected = [...document.querySelectorAll('.room-pick-card.selected')];
+    selectedRooms  = selected.map(c => c.dataset.room);
+    const info     = document.getElementById('selectedRoomsInfo');
+    if (selected.length > 0) {
+      info.style.display = '';
+      info.textContent   = selected.length + ' room(s) selected: ' + selected.map(c => 'Room ' + c.dataset.room).join(', ');
+      document.getElementById('sumRooms').textContent = selected.map(c => '#' + c.dataset.room).join(', ');
+    } else {
+      info.style.display = 'none';
+      document.getElementById('sumRooms').textContent = '—';
+    }
+    closeModal('roomsModal');
+  }
+
+  // ── Create Booking ──
+  function createBooking() {
+    if (!selectedGuest) {
+      document.getElementById('sumError').style.display = '';
+      return;
+    }
+    alert('Booking created successfully!');
+    window.location.href = 'bookings.html';
+  }
+
+  // ── Modal helpers ──
+  function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+  function closeModalOutside(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
+
+  // Sidebar
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('open');
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('open');
+  }
+</script>
+</body>
+</html>

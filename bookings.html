@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bookings — Hotel Management System</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Page specific ── */
+    .page-meta { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+    .bookings-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .toolbar-left  { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; flex: 1; }
+    .toolbar-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+    .search-wrap {
+      position: relative;
+      min-width: 180px;
+      max-width: 240px;
+      flex: 1;
+    }
+    .search-wrap svg {
+      position: absolute; left: 10px; top: 50%;
+      transform: translateY(-50%);
+      width: 15px; height: 15px; color: var(--text-muted);
+      pointer-events: none;
+    }
+    .search-input {
+      width: 100%;
+      padding: 8px 12px 8px 32px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      font-family: 'DM Sans', sans-serif;
+      color: var(--text);
+      background: var(--white);
+      outline: none;
+    }
+    .search-input:focus { border-color: var(--primary); }
+    .search-input::placeholder { color: var(--text-light); }
+
+    .prop-select {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 12px;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 500; color: var(--text);
+      background: var(--white); cursor: pointer; font-family: inherit;
+      white-space: nowrap;
+    }
+    .prop-select svg { width: 13px; height: 13px; color: var(--text-muted); }
+
+    /* Tab filters */
+    .tab-row {
+      display: flex;
+      gap: 2px;
+      margin-bottom: 0;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      padding: 7px 16px;
+      border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer; border: none;
+      background: none; font-family: inherit;
+      transition: all .15s; white-space: nowrap;
+    }
+    .tab-btn:hover  { color: var(--text); background: var(--bg); }
+    .tab-btn.active {
+      background: var(--primary-light);
+      color: var(--primary);
+      font-weight: 700;
+    }
+
+    /* Table tweaks */
+    .ref-col   { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-muted); }
+    .guest-col { font-weight: 600; }
+
+    .action-link {
+      color: var(--primary); font-size: 13px; font-weight: 600;
+      cursor: pointer; text-decoration: none; margin-right: 8px;
+    }
+    .action-link:hover { text-decoration: underline; }
+    .action-del  { color: var(--red); font-size: 13px; font-weight: 600; cursor: pointer; }
+    .action-del:hover { text-decoration: underline; }
+
+    /* Pagination row */
+    .table-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 20px; border-top: 1px solid var(--border);
+      font-size: 12.5px; color: var(--text-muted);
+    }
+    .pg-btns { display: flex; gap: 4px; }
+    .pg-btn {
+      width: 28px; height: 28px; border: 1px solid var(--border);
+      border-radius: 6px; background: var(--white); cursor: pointer;
+      font-size: 12px; font-family: inherit; color: var(--text-muted);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pg-btn:hover  { background: var(--bg); }
+    .pg-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; }
+    .pg-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── Reservation Detail Modal ── */
+    .modal-lg { max-width: 460px; }
+
+    .modal-res-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 18px 20px 14px;
+      border-bottom: 1px solid var(--border);
+    }
+    .modal-res-id {
+      font-size: 14px; font-weight: 700; color: var(--text);
+      font-family: 'DM Mono', monospace;
+    }
+
+    .res-section { margin-bottom: 18px; }
+    .res-section-title {
+      font-size: 10px; font-weight: 700; letter-spacing: .7px;
+      text-transform: uppercase; color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .res-row {
+      display: flex; justify-content: space-between;
+      align-items: baseline; padding: 4px 0;
+      border-bottom: 1px solid var(--bg);
+      font-size: 13.5px;
+    }
+    .res-row:last-child { border-bottom: none; }
+    .res-label { color: var(--text-muted); }
+    .res-value { font-weight: 500; color: var(--text); text-align: right; }
+
+    .rooms-line {
+      display: flex; justify-content: space-between;
+      padding: 6px 0; font-size: 13.5px;
+      border-bottom: 1px solid var(--bg);
+    }
+    .rooms-line:last-child { border-bottom: none; }
+
+    .total-row {
+      display: flex; justify-content: space-between;
+      padding: 12px 0 0; font-size: 15px; font-weight: 700;
+      border-top: 2px solid var(--border); margin-top: 8px;
+    }
+
+    .invoice-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 0 0;
+    }
+    .invoice-label {
+      font-size: 11px; font-weight: 700; letter-spacing: .6px;
+      text-transform: uppercase; color: var(--text-muted);
+    }
+    .invoice-link {
+      font-size: 13px; font-weight: 600; color: var(--primary); cursor: pointer;
+    }
+    .invoice-link:hover { text-decoration: underline; }
+
+    .modal-res-footer {
+      display: flex; justify-content: flex-end; gap: 10px;
+      padding: 14px 20px; border-top: 1px solid var(--border);
+    }
+    .btn-checkin {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 9px 18px; background: var(--primary); color: #fff;
+      border: none; border-radius: var(--radius-sm);
+      font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit;
+      transition: opacity .18s;
+    }
+    .btn-checkin:hover { opacity: .88; }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+      .bookings-toolbar { flex-direction: column; align-items: stretch; }
+      .toolbar-left, .toolbar-right { width: 100%; }
+      .search-wrap { max-width: 100%; }
+      thead th:nth-child(1),
+      tbody td:nth-child(1) { display: none; } /* hide REF on small */
+    }
+    @media (max-width: 520px) {
+      thead th:nth-child(5),
+      tbody td:nth-child(5),
+      thead th:nth-child(6),
+      tbody td:nth-child(6) { display: none; } /* hide nights + amount */
+    }
+  </style>
+</head>
+<body class="layout-app">
+
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+        <polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    </div>
+    <span class="brand-name">Royal Brangsa</span>
+  </div>
+
+  <div class="sidebar-section-label">Operations</div>
+  <a href="index.html"    class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    Dashboard
+  </a>
+  <a href="front-desk.html"   class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+    Front Desk
+  </a>
+  <a href="bookings.html"     class="nav-item active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>
+    Bookings
+  </a>
+  <a href="new-booking.html"  class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    New Booking
+  </a>
+  <a href="guests.html"       class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Guests
+  </a>
+  <a href="rooms-floors.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Rooms &amp; Floors
+  </a>
+
+  <div class="sidebar-section-label">Finance</div>
+  <a href="invoices.html"  class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+    Invoices
+  </a>
+  <a href="payments.html"  class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+    Payments
+  </a>
+  <a href="expenses.html"  class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    Expenses
+  </a>
+  <a href="cashflow.html"  class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+    Cash Flow
+  </a>
+
+  <div class="sidebar-section-label">Reports</div>
+  <a href="analytics.html" class="nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    Analytics &amp; Performance
+  </a>
+
+  <div class="sidebar-bottom">
+    <a href="staff-management.html"  class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Staff Management
+    </a>
+    <a href="business-settings.html" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+      Business Settings
+    </a>
+    <div class="user-card">
+      <div class="user-avatar">K</div>
+      <div class="user-info">
+        <div class="user-name">Kacho Karman</div>
+        <div class="user-role">Manager</div>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" onclick="toggleSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <span class="topbar-title">Bookings</span>
+    </div>
+    <div class="topbar-right">
+      <a href="new-booking.html" class="btn-primary">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Booking
+      </a>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <div class="page-header">
+      <h1>Bookings</h1>
+      <div class="page-meta">Total reservations: 25</div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="bookings-toolbar">
+      <div class="toolbar-left">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="search-input" type="text" placeholder="Search guests..." oninput="searchBookings(this.value)" />
+        </div>
+        <div class="prop-select">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+          All Properties
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tab-row" style="margin-bottom:16px;">
+      <button class="tab-btn active" onclick="filterTab('all',this)">All</button>
+      <button class="tab-btn" onclick="filterTab('pending',this)">Pending</button>
+      <button class="tab-btn" onclick="filterTab('confirmed',this)">Confirmed</button>
+      <button class="tab-btn" onclick="filterTab('inhouse',this)">In-House</button>
+      <button class="tab-btn" onclick="filterTab('checkedout',this)">Checked Out</button>
+      <button class="tab-btn" onclick="filterTab('cancelled',this)">Cancelled</button>
+      <button class="tab-btn" onclick="filterTab('noshow',this)">No Show</button>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <div class="table-wrap">
+        <table id="bookingsTable">
+          <thead>
+            <tr>
+              <th>Ref</th>
+              <th>Guest</th>
+              <th>Rooms</th>
+              <th>Check-In</th>
+              <th>Check-Out</th>
+              <th>Nights</th>
+              <th>Amount</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="bookingsTbody">
+            <!-- Rows injected by JS -->
+          </tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span id="paginationInfo">1–10 of 25</span>
+        <div class="pg-btns">
+          <button class="pg-btn" onclick="changePage(-1)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="15 18 9 12 15 6"/></svg>
+          </button>
+          <button class="pg-btn active" id="pgBtn1" onclick="setPage(1)">1</button>
+          <button class="pg-btn" id="pgBtn2" onclick="setPage(2)">2</button>
+          <button class="pg-btn" id="pgBtn3" onclick="setPage(3)">3</button>
+          <button class="pg-btn" onclick="changePage(1)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><polyline points="9 18 15 12 9 6"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── MODAL: Reservation Detail ── -->
+<div class="modal-overlay" id="resModal" onclick="closeModalOutside(event)">
+  <div class="modal modal-lg">
+    <div class="modal-res-header">
+      <span class="modal-res-id" id="modalResId">Reservation #f09de494</span>
+      <span class="badge" id="modalResBadge"></span>
+      <button class="modal-close" style="margin-left:auto;" onclick="closeModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body" style="padding:20px;">
+
+      <!-- GUEST -->
+      <div class="res-section">
+        <div class="res-section-title">Guest</div>
+        <div class="res-row"><span class="res-label">Name</span>  <span class="res-value" id="rName"></span></div>
+        <div class="res-row"><span class="res-label">Email</span> <span class="res-value" id="rEmail"></span></div>
+        <div class="res-row"><span class="res-label">Phone</span> <span class="res-value" id="rPhone"></span></div>
+      </div>
+
+      <!-- STAY -->
+      <div class="res-section">
+        <div class="res-section-title">Stay</div>
+        <div class="res-row"><span class="res-label">Check-in</span>  <span class="res-value" id="rCheckin"></span></div>
+        <div class="res-row"><span class="res-label">Check-out</span> <span class="res-value" id="rCheckout"></span></div>
+        <div class="res-row"><span class="res-label">Nights</span>    <span class="res-value" id="rNights"></span></div>
+        <div class="res-row"><span class="res-label">Guests</span>    <span class="res-value" id="rGuests"></span></div>
+        <div class="res-row"><span class="res-label">Channel</span>   <span class="res-value" id="rChannel"></span></div>
+      </div>
+
+      <!-- ROOMS -->
+      <div class="res-section">
+        <div class="res-section-title">Rooms</div>
+        <div id="rRoomsList"></div>
+        <div class="total-row">
+          <span>Total</span>
+          <span id="rTotal"></span>
+        </div>
+      </div>
+
+      <!-- INVOICE -->
+      <div class="invoice-row">
+        <span class="invoice-label">Invoice</span>
+        <span class="invoice-link">Generate Invoice</span>
+      </div>
+
+    </div>
+    <div class="modal-res-footer">
+      <button class="btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn-secondary" onclick="closeModal()">Close</button>
+      <button class="btn-checkin" id="checkInBtn" onclick="closeModal()">Check In</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ── Data ──
+  const bookings = [
+    { ref:'3e8814b5', guest:'kashif khan', room:'#102', checkin:'29/03/2026', checkout:'30/03/2026', nights:1, amount:'Rs 2,500', status:'checkedout', email:'kashif@gmail.com', phone:'03001234567', guests:1, channel:'Walk In' },
+    { ref:'47983928', guest:'atif ali',    room:'#201', checkin:'27/03/2026', checkout:'28/03/2026', nights:1, amount:'Rs 5,000', status:'checkedout', email:'atif@gmail.com',   phone:'03011234567', guests:2, channel:'Walk In' },
+    { ref:'6a369562', guest:'ahamd ali',   room:'#201', checkin:'26/03/2026', checkout:'27/03/2026', nights:1, amount:'Rs 5,000', status:'checkedout', email:'ahamd@gmail.com',  phone:'03021234567', guests:1, channel:'Phone' },
+    { ref:'da2e3535', guest:'Noor ali',    room:'#201', checkin:'24/03/2026', checkout:'26/03/2026', nights:2, amount:'Rs 10,000',status:'inhouse',    email:'noor@gmail.com',   phone:'03031234567', guests:2, channel:'Booking.com' },
+    { ref:'73925ea3', guest:'atif ali',    room:'#102', checkin:'23/03/2026', checkout:'24/03/2026', nights:1, amount:'Rs 2,500', status:'confirmed',   email:'atif2@gmail.com',  phone:'03041234567', guests:1, channel:'Walk In' },
+    { ref:'c5c39bff', guest:'ayeza khan',  room:'#101', checkin:'21/03/2026', checkout:'23/03/2026', nights:2, amount:'Rs 6,000', status:'confirmed',   email:'ayeza@gmail.com',  phone:'03051234567', guests:2, channel:'WhatsApp' },
+    { ref:'2ddc77bd', guest:'khan ali',    room:'#302', checkin:'21/03/2026', checkout:'23/03/2026', nights:2, amount:'Rs 4,000', status:'inhouse',     email:'khan@gmail.com',   phone:'03061234567', guests:1, channel:'Walk In' },
+    { ref:'f09de494', guest:'ashiq ali',   room:'#301', checkin:'20/03/2026', checkout:'22/03/2026', nights:2, amount:'Rs 5,000', status:'confirmed',   email:'ali@gmail.com',    phone:'03418118225', guests:3, channel:'WhatsApp' },
+    { ref:'ab12cd34', guest:'raja azam',   room:'#103', checkin:'19/03/2026', checkout:'21/03/2026', nights:2, amount:'Rs 4,000', status:'checkedout',  email:'raja@gmail.com',   phone:'03071234567', guests:2, channel:'Airbnb' },
+    { ref:'ef56gh78', guest:'danish ali',  room:'#202', checkin:'18/03/2026', checkout:'20/03/2026', nights:2, amount:'Rs 3,000', status:'cancelled',   email:'danish@gmail.com', phone:'03081234567', guests:1, channel:'Phone' },
+  ];
+
+  const statusMap = {
+    confirmed:  { cls: 'badge-confirmed',  label: 'Confirmed'   },
+    inhouse:    { cls: 'badge-inhouse',    label: 'In-House'    },
+    checkedout: { cls: 'badge-checkedout', label: 'Checked Out' },
+    cancelled:  { cls: 'badge-cancelled',  label: 'Cancelled'   },
+    pending:    { cls: 'badge-pending',    label: 'Pending'     },
+    noshow:     { cls: 'badge-draft',      label: 'No Show'     },
+  };
+
+  let currentFilter = 'all';
+  let currentSearch = '';
+  let currentPage   = 1;
+  const perPage     = 10;
+
+  function getFiltered() {
+    return bookings.filter(b => {
+      const matchTab    = currentFilter === 'all' || b.status === currentFilter;
+      const matchSearch = b.guest.toLowerCase().includes(currentSearch.toLowerCase()) ||
+                          b.ref.toLowerCase().includes(currentSearch.toLowerCase());
+      return matchTab && matchSearch;
+    });
+  }
+
+  function renderTable() {
+    const filtered = getFiltered();
+    const start    = (currentPage - 1) * perPage;
+    const slice    = filtered.slice(start, start + perPage);
+    const tbody    = document.getElementById('bookingsTbody');
+
+    tbody.innerHTML = slice.map(b => {
+      const s    = statusMap[b.status] || statusMap.pending;
+      const canDel = ['confirmed','pending'].includes(b.status);
+      return `
+        <tr>
+          <td class="ref-col">${b.ref.slice(0,8)}</td>
+          <td class="guest-col">${b.guest}</td>
+          <td>${b.room}</td>
+          <td>${b.checkin}</td>
+          <td>${b.checkout}</td>
+          <td>${b.nights}</td>
+          <td>${b.amount}</td>
+          <td><span class="badge ${s.cls}">${s.label}</span></td>
+          <td>
+            <a class="action-link" onclick="openModal('${b.ref}')">View</a>
+            ${canDel ? `<span class="action-del" onclick="event.stopPropagation()">Delete</span>` : ''}
+          </td>
+        </tr>`;
+    }).join('');
+
+    document.getElementById('paginationInfo').textContent =
+      filtered.length === 0 ? 'No results' :
+      `${start+1}–${Math.min(start+perPage, filtered.length)} of ${filtered.length}`;
+
+    // update page buttons
+    const totalPages = Math.ceil(filtered.length / perPage);
+    for (let i = 1; i <= 3; i++) {
+      const btn = document.getElementById('pgBtn' + i);
+      if (btn) {
+        btn.style.display = i <= totalPages ? '' : 'none';
+        btn.classList.toggle('active', i === currentPage);
+      }
+    }
+  }
+
+  function filterTab(status, el) {
+    currentFilter = status;
+    currentPage   = 1;
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    renderTable();
+  }
+
+  function searchBookings(val) {
+    currentSearch = val;
+    currentPage   = 1;
+    renderTable();
+  }
+
+  function setPage(p) {
+    currentPage = p;
+    renderTable();
+  }
+
+  function changePage(dir) {
+    const total = Math.ceil(getFiltered().length / perPage);
+    currentPage = Math.max(1, Math.min(total, currentPage + dir));
+    renderTable();
+  }
+
+  // ── Modal ──
+  function openModal(ref) {
+    const b = bookings.find(x => x.ref === ref);
+    if (!b) return;
+
+    const s = statusMap[b.status] || statusMap.pending;
+    document.getElementById('modalResId').textContent   = 'Reservation #' + b.ref;
+    document.getElementById('modalResBadge').className  = 'badge ' + s.cls;
+    document.getElementById('modalResBadge').textContent = s.label;
+
+    document.getElementById('rName').textContent    = b.guest;
+    document.getElementById('rEmail').textContent   = b.email;
+    document.getElementById('rPhone').textContent   = b.phone;
+    document.getElementById('rCheckin').textContent  = b.checkin;
+    document.getElementById('rCheckout').textContent = b.checkout;
+    document.getElementById('rNights').textContent  = b.nights;
+    document.getElementById('rGuests').textContent  = b.guests;
+    document.getElementById('rChannel').textContent = b.channel;
+
+    const ratePerNight = parseInt(b.amount.replace(/\D/g,'')) / b.nights;
+    document.getElementById('rRoomsList').innerHTML = `
+      <div class="rooms-line">
+        <span>${b.room} (Floor 3)</span>
+        <span>Rs ${ratePerNight.toLocaleString()} × ${b.nights}n = <strong>${b.amount}</strong></span>
+      </div>`;
+    document.getElementById('rTotal').textContent = b.amount;
+
+    // Show Check In only for confirmed/pending
+    const btn = document.getElementById('checkInBtn');
+    btn.style.display = ['confirmed','pending'].includes(b.status) ? '' : 'none';
+
+    document.getElementById('resModal').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('resModal').classList.remove('open');
+  }
+
+  function closeModalOutside(e) {
+    if (e.target === document.getElementById('resModal')) closeModal();
+  }
+
+  // Sidebar
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('open');
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('open');
+  }
+
+  // Init
+  renderTable();
+</script>
+</body>
+</html>
