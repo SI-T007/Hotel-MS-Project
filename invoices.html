@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Invoices — Hotel Management System</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .page-meta{font-size:13px;color:var(--text-muted);margin-top:2px;}
+
+    /* Tab filter bar */
+    .inv-tabs{display:flex;align-items:center;gap:6px;margin-bottom:16px;flex-wrap:wrap;}
+    .inv-tab{padding:5px 14px;border-radius:20px;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;border:1px solid var(--border);background:var(--white);font-family:inherit;transition:all .15s;}
+    .inv-tab:hover{border-color:var(--text-muted);color:var(--text);}
+    .inv-tab.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+
+    /* toolbar */
+    .toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+    .prop-sel{display:flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-weight:500;color:var(--text);background:var(--white);cursor:pointer;font-family:inherit;}
+    .prop-sel svg{width:13px;height:13px;color:var(--text-muted);}
+
+    /* table cols */
+    .inv-num{font-family:'DM Mono',monospace;font-size:12.5px;font-weight:600;color:var(--primary);cursor:pointer;}
+    .inv-num:hover{text-decoration:underline;}
+    .muted{color:var(--text-muted);}
+    .bal-red{color:var(--red);font-weight:600;}
+    .a-lnk{color:var(--primary);font-size:13px;font-weight:600;cursor:pointer;margin-right:8px;}
+    .a-lnk:hover{text-decoration:underline;}
+
+    /* table footer */
+    .tf{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-top:1px solid var(--border);font-size:12.5px;color:var(--text-muted);}
+    .pgb{display:flex;gap:4px;}
+    .pb{width:28px;height:28px;border:1px solid var(--border);border-radius:6px;background:var(--white);cursor:pointer;font-size:12px;font-family:inherit;color:var(--text-muted);display:flex;align-items:center;justify-content:center;}
+    .pb:hover{background:var(--bg);}
+    .pb.active{background:var(--primary);color:#fff;border-color:var(--primary);font-weight:700;}
+
+    /* ── Invoice Detail Modal ── */
+    .modal-inv{max-width:580px;}
+    .inv-modal-hdr{display:flex;align-items:center;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border);}
+    .inv-id{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--text);}
+
+    /* action buttons row */
+    .inv-actions{display:flex;align-items:center;gap:8px;padding:12px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;}
+    .btn-issue{padding:7px 14px;background:var(--primary);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;}
+    .btn-issue:hover{opacity:.9;}
+    .btn-add-pay{padding:7px 14px;background:#22c55e;color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;}
+    .btn-add-pay:hover{opacity:.9;}
+    .btn-add-charge{padding:7px 14px;background:var(--white);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;}
+    .btn-add-charge:hover{background:var(--bg);}
+    .btn-void{padding:7px 14px;background:var(--white);color:var(--red);border:1px solid #fecaca;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;}
+    .btn-void:hover{background:var(--red-light);}
+    .btn-print{display:flex;align-items:center;gap:5px;padding:7px 14px;background:var(--white);color:var(--text);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;margin-left:auto;}
+    .btn-print svg{width:14px;height:14px;}
+    .btn-del{color:var(--red);font-size:13px;font-weight:600;cursor:pointer;background:none;border:none;font-family:inherit;}
+    .btn-del:hover{text-decoration:underline;}
+
+    /* invoice body */
+    .inv-body{padding:20px;max-height:60vh;overflow-y:auto;}
+
+    /* ADD PAYMENT section */
+    .add-pay-section{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:var(--radius-sm);padding:16px;margin-bottom:20px;}
+    .add-pay-title{font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#15803d;margin-bottom:12px;}
+
+    /* invoice meta */
+    .inv-meta-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
+    .inv-meta-item label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);}
+    .inv-meta-item p{font-size:13px;font-weight:600;color:var(--text);margin-top:2px;}
+
+    /* from/bill grid */
+    .inv-parties{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;}
+    .inv-party-label{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;}
+    .inv-party-name{font-size:13.5px;font-weight:700;color:var(--text);}
+    .inv-party-sub{font-size:12px;color:var(--text-muted);line-height:1.6;}
+
+    /* stay */
+    .stay-row{display:flex;gap:20px;margin-bottom:16px;padding:12px;background:var(--bg);border-radius:var(--radius-sm);}
+    .stay-item label{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);}
+    .stay-item p{font-size:13px;font-weight:600;color:var(--text);margin-top:2px;}
+
+    /* charges table */
+    .charges-lbl{font-size:10px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
+    .charge-type-badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;}
+    .ct-room{background:#dbeafe;color:var(--blue);}
+    .ct-fb  {background:#fef3c7;color:#d97706;}
+    .ct-car {background:#ede9fe;color:var(--purple);}
+
+    /* totals */
+    .inv-totals{border-top:1px solid var(--border);padding-top:10px;margin-top:4px;}
+    .total-row{display:flex;justify-content:space-between;font-size:13.5px;padding:3px 0;}
+    .total-row.grand{font-size:15px;font-weight:700;border-top:2px solid var(--border);padding-top:8px;margin-top:4px;}
+    .total-row.balance{color:var(--red);font-weight:700;}
+
+    /* ADD CHARGE section */
+    .add-charge-section{background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-top:16px;}
+    .add-charge-title{font-size:12px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;}
+    .charge-form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+
+    @media(max-width:640px){
+      .inv-meta-grid{grid-template-columns:repeat(2,1fr);}
+      .inv-parties{grid-template-columns:1fr;}
+      .stay-row{flex-wrap:wrap;gap:10px;}
+      .charge-form-row{grid-template-columns:1fr;}
+      .inv-actions{gap:6px;}
+      thead th:nth-child(3),tbody td:nth-child(3),
+      thead th:nth-child(4),tbody td:nth-child(4){display:none;}
+    }
+  </style>
+</head>
+<body class="layout-app">
+
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+    <span class="brand-name">Royal Brangsa</span>
+  </div>
+  <div class="sidebar-section-label">Operations</div>
+  <a href="index.html"    class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+  <a href="front-desk.html"   class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Front Desk</a>
+  <a href="bookings.html"     class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Bookings</a>
+  <a href="new-booking.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>New Booking</a>
+  <a href="guests.html"       class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Guests</a>
+  <a href="rooms-floors.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Rooms &amp; Floors</a>
+  <div class="sidebar-section-label">Finance</div>
+  <a href="invoices.html"  class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Invoices</a>
+  <a href="payments.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Payments</a>
+  <a href="expenses.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Expenses</a>
+  <a href="cashflow.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>Cash Flow</a>
+  <div class="sidebar-section-label">Reports</div>
+  <a href="analytics.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics &amp; Performance</a>
+  <div class="sidebar-bottom">
+    <a href="staff-management.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Staff Management</a>
+    <a href="business-settings.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/></svg>Business Settings</a>
+    <div class="user-card">
+      <div class="user-avatar">K</div>
+      <div class="user-info"><div class="user-name">Kacho Karman</div><div class="user-role">Manager</div></div>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" onclick="toggleSidebar()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <span class="topbar-title">Invoices</span>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="page-header">
+      <h1>Invoices</h1>
+      <div class="page-meta">15 invoices</div>
+    </div>
+
+    <div class="toolbar">
+      <div class="inv-tabs">
+        <button class="inv-tab active" onclick="filterInv('all',this)">All</button>
+        <button class="inv-tab" onclick="filterInv('draft',this)">Draft</button>
+        <button class="inv-tab" onclick="filterInv('issued',this)">Issued</button>
+        <button class="inv-tab" onclick="filterInv('partial',this)">Partial</button>
+        <button class="inv-tab" onclick="filterInv('paid',this)">Paid</button>
+        <button class="inv-tab" onclick="filterInv('overdue',this)">Overdue</button>
+        <button class="inv-tab" onclick="filterInv('voided',this)">Voided</button>
+      </div>
+      <div class="prop-sel">
+        All Properties
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Invoice #</th><th>Guest</th><th>Issued</th><th>Due Date</th><th>Total</th><th>Paid</th><th>Balance</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="invTbody"></tbody>
+        </table>
+      </div>
+      <div class="tf">
+        <span id="invInfo">1–10 of 15</span>
+        <div class="pgb">
+          <button class="pb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <button class="pb active">1</button>
+          <button class="pb">2</button>
+          <button class="pb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL: Invoice Detail (includes Add Payment + Add Charge) ══ -->
+<div class="modal-overlay" id="invModal" onclick="closeOut(event,'invModal')">
+  <div class="modal modal-inv">
+    <div class="inv-modal-hdr">
+      <span class="inv-id" id="mInvId">INV-2026-01024</span>
+      <span class="badge" id="mInvBadge"></span>
+      <button class="modal-close" style="margin-left:auto;" onclick="closeM('invModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+
+    <!-- Action buttons -->
+    <div class="inv-actions" id="mInvActions">
+      <button class="btn-issue">Issue Invoice</button>
+      <button class="btn-add-pay" onclick="toggleAddPay()">+ Add Payment</button>
+      <button class="btn-add-charge" onclick="toggleAddCharge()">+ Add Charge</button>
+      <button class="btn-void">Void Invoice</button>
+      <button class="btn-print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print / PDF</button>
+      <button class="btn-del">Delete</button>
+    </div>
+
+    <div class="inv-body">
+
+      <!-- Add Payment (collapsible) -->
+      <div class="add-pay-section" id="addPaySection" style="display:none;">
+        <div class="add-pay-title">Add Payment</div>
+        <div class="form-row" style="margin-bottom:10px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Amount (PKR) *</label>
+            <input type="number" class="form-input" id="payAmt" placeholder="0.00"/>
+            <div style="font-size:11px;color:var(--text-muted);margin-top:3px;" id="payBalance"></div>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Date *</label>
+            <input type="date" class="form-input" id="payDate"/>
+          </div>
+        </div>
+        <div class="form-row" style="margin-bottom:10px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Method</label>
+            <select class="form-select" id="payMethod">
+              <option>Cash</option>
+              <option>Credit / Debit Card</option>
+              <option>Bank Transfer</option>
+              <option>Online Payment</option>
+              <option>Other</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Reference</label>
+            <input type="text" class="form-input" placeholder="Optional"/>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:10px;">
+          <label class="form-label">Notes</label>
+          <input type="text" class="form-input" placeholder="Optional"/>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;">
+          <button class="btn-secondary" onclick="toggleAddPay()">Cancel</button>
+          <button class="btn-add-pay" style="padding:8px 16px;" onclick="toggleAddPay()">Add Payment</button>
+        </div>
+      </div>
+
+      <!-- Invoice Meta -->
+      <div class="inv-meta-grid">
+        <div class="inv-meta-item"><label>Invoice #</label><p id="mMeta1">INV-2026-01024</p></div>
+        <div class="inv-meta-item"><label>Issued</label><p id="mMeta2">2026-03-19</p></div>
+        <div class="inv-meta-item"><label>Due Date</label><p id="mMeta3">On receipt</p></div>
+        <div class="inv-meta-item"><label>Reservation</label><p id="mMeta4">f09de494</p></div>
+      </div>
+
+      <!-- From / Bill To -->
+      <div class="inv-parties">
+        <div>
+          <div class="inv-party-label">From</div>
+          <div class="inv-party-name">Royal Brangsa</div>
+          <div class="inv-party-sub">Skardu Main Branch<br/>Ali Abad Skardu<br/>Skardu</div>
+        </div>
+        <div>
+          <div class="inv-party-label">Bill To</div>
+          <div class="inv-party-name" id="mBillName">ashiq ali</div>
+          <div class="inv-party-sub" id="mBillSub">ali@gmail.com<br/>03418118225</div>
+        </div>
+      </div>
+
+      <!-- Stay -->
+      <div class="stay-row">
+        <div class="stay-item"><label>Check-in</label><p id="mCheckin">2026-03-20</p></div>
+        <div class="stay-item"><label>Check-out</label><p id="mCheckout">2026-03-22</p></div>
+        <div class="stay-item"><label>Guests</label><p id="mGuests">3</p></div>
+        <div class="stay-item"><label>Status</label><p id="mStayStatus">CheckedOut</p></div>
+      </div>
+
+      <!-- Charges -->
+      <div class="charges-lbl">Charges</div>
+      <div class="table-wrap" style="margin-bottom:12px;">
+        <table>
+          <thead><tr><th>Type</th><th>Description</th><th>Qty</th><th>Unit Price</th><th>Total</th></tr></thead>
+          <tbody id="mChargesTbody"></tbody>
+        </table>
+      </div>
+
+      <!-- Add Charge (collapsible) -->
+      <div class="add-charge-section" id="addChargeSection" style="display:none;">
+        <div class="add-charge-title">Add Line Item</div>
+        <div class="form-row" style="margin-bottom:10px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Description</label>
+            <input type="text" class="form-input" placeholder="e.g. dinner"/>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Type</label>
+            <select class="form-select">
+              <option>Food &amp; Beverage</option>
+              <option>Room</option>
+              <option>Car Rental</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="charge-form-row" style="margin-bottom:10px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Qty</label>
+            <input type="number" class="form-input" value="1" min="1"/>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Unit Price (PKR)</label>
+            <input type="number" class="form-input" placeholder="0"/>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;">
+          <button class="btn-secondary" onclick="toggleAddCharge()">Cancel</button>
+          <button class="btn-primary" onclick="toggleAddCharge()">Add Line Item</button>
+        </div>
+      </div>
+
+      <!-- Totals -->
+      <div class="inv-totals">
+        <div class="total-row"><span>Subtotal</span><span id="mSubtotal">Rs 6,700</span></div>
+        <div class="total-row grand"><span>Total</span><span id="mTotal">Rs 6,700</span></div>
+        <div class="total-row balance"><span>Balance</span><span id="mBalance">Rs 6,700</span></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  const invoices = [
+    { id:'INV-2026-01024', guest:'ashiq ali',   issued:'19/03/2026', due:'On receipt', total:6700, paid:null,  balance:6700, status:'draft',   res:'f09de494', checkin:'2026-03-20', checkout:'2026-03-22', guests:3, charges:[{type:'room',desc:'Room 301 — 2 nights',qty:2,unit:2500,total:5000},{type:'fb',desc:'dinner',qty:1,unit:1200,total:1200},{type:'car',desc:'car',qty:1,unit:500,total:500}] },
+    { id:'INV-2026-01023', guest:'raja azam',   issued:'19/03/2026', due:'—',          total:4000, paid:4000,  balance:0,    status:'paid',    res:'r3c96492', checkin:'2026-03-18', checkout:'2026-03-20', guests:2, charges:[{type:'room',desc:'Room 103 — 2 nights',qty:2,unit:2000,total:4000}] },
+    { id:'INV-2026-01022', guest:'danish ali',  issued:'19/03/2026', due:'—',          total:5000, paid:null,  balance:5000, status:'draft',   res:'73b2c203', checkin:'2026-03-17', checkout:'2026-03-19', guests:1, charges:[{type:'room',desc:'Room 201 — 2 nights',qty:2,unit:2500,total:5000}] },
+    { id:'INV-2026-01018', guest:'Qasim Khan',  issued:'15/03/2026', due:'—',          total:5000, paid:5000,  balance:0,    status:'paid',    res:'3de2e4a2', checkin:'2026-03-15', checkout:'2026-03-16', guests:2, charges:[{type:'room',desc:'Room 302 — 1 night',qty:1,unit:5000,total:5000}] },
+    { id:'INV-2026-01013', guest:'ahamd ali',   issued:'13/03/2026', due:'—',          total:2000, paid:2000,  balance:0,    status:'paid',    res:'3ef4201f', checkin:'2026-03-13', checkout:'2026-03-14', guests:1, charges:[{type:'room',desc:'Room 102 — 1 night',qty:1,unit:2000,total:2000}] },
+    { id:'INV-2026-01012', guest:'kashif khan', issued:'13/03/2026', due:'—',          total:3700, paid:3700,  balance:0,    status:'paid',    res:'b015dee8', checkin:'2026-03-12', checkout:'2026-03-14', guests:1, charges:[{type:'room',desc:'Room 101 — 2 nights',qty:2,unit:1850,total:3700}] },
+  ];
+
+  const statusMap = { draft:'badge-draft', issued:'badge-confirmed', partial:'badge-partial', paid:'badge-paid', overdue:'badge-cancelled', voided:'badge-checkedout' };
+  const statusLbl = { draft:'Draft', issued:'Issued', partial:'Partial', paid:'Paid', overdue:'Overdue', voided:'Voided' };
+  const chargeTypeCls = { room:'ct-room', fb:'ct-fb', car:'ct-car' };
+  const chargeTypeLbl = { room:'Room', fb:'Food & Beverage', car:'Car Rental' };
+
+  let curFilter = 'all';
+
+  function renderInvoices() {
+    const list = curFilter === 'all' ? invoices : invoices.filter(i => i.status === curFilter);
+    document.getElementById('invTbody').innerHTML = list.map(inv => `
+      <tr>
+        <td><span class="inv-num" onclick="openInv('${inv.id}')">${inv.id}</span></td>
+        <td>${inv.guest}</td>
+        <td>${inv.issued}</td>
+        <td class="muted">${inv.due}</td>
+        <td>Rs ${inv.total.toLocaleString()}</td>
+        <td class="muted">${inv.paid ? 'Rs '+inv.paid.toLocaleString() : '—'}</td>
+        <td>${inv.balance > 0 ? `<span class="bal-red">Rs ${inv.balance.toLocaleString()}</span>` : 'Nil'}</td>
+        <td><span class="badge ${statusMap[inv.status]}">${statusLbl[inv.status]}</span></td>
+        <td>
+          <span class="a-lnk" onclick="openInv('${inv.id}')">View</span>
+          <span class="a-lnk">Print</span>
+        </td>
+      </tr>`).join('');
+    document.getElementById('invInfo').textContent = `1–${list.length} of ${list.length}`;
+  }
+
+  function filterInv(status, el) {
+    curFilter = status;
+    document.querySelectorAll('.inv-tab').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    renderInvoices();
+  }
+
+  function openInv(id) {
+    const inv = invoices.find(i => i.id === id);
+    if (!inv) return;
+
+    document.getElementById('mInvId').textContent     = inv.id;
+    document.getElementById('mInvBadge').className    = 'badge ' + statusMap[inv.status];
+    document.getElementById('mInvBadge').textContent  = statusLbl[inv.status];
+    document.getElementById('mMeta1').textContent     = inv.id;
+    document.getElementById('mMeta2').textContent     = inv.issued;
+    document.getElementById('mMeta3').textContent     = inv.due;
+    document.getElementById('mMeta4').textContent     = inv.res;
+    document.getElementById('mBillName').textContent  = inv.guest;
+    document.getElementById('mCheckin').textContent   = inv.checkin;
+    document.getElementById('mCheckout').textContent  = inv.checkout;
+    document.getElementById('mGuests').textContent    = inv.guests;
+    document.getElementById('mSubtotal').textContent  = 'Rs ' + inv.total.toLocaleString();
+    document.getElementById('mTotal').textContent     = 'Rs ' + inv.total.toLocaleString();
+    document.getElementById('mBalance').textContent   = 'Rs ' + inv.balance.toLocaleString();
+    document.getElementById('payBalance').textContent = 'Balance: Rs ' + inv.balance.toLocaleString();
+    document.getElementById('payAmt').value           = inv.balance || '';
+
+    // paid → hide action buttons except print
+    const actionsEl = document.getElementById('mInvActions');
+    if (inv.status === 'paid') {
+      actionsEl.innerHTML = `<button class="btn-print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print / PDF</button>`;
+    } else {
+      actionsEl.innerHTML = `
+        <button class="btn-issue">Issue Invoice</button>
+        <button class="btn-add-pay" onclick="toggleAddPay()">+ Add Payment</button>
+        <button class="btn-add-charge" onclick="toggleAddCharge()">+ Add Charge</button>
+        <button class="btn-void">Void Invoice</button>
+        <button class="btn-print"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>Print / PDF</button>
+        <button class="btn-del">Delete</button>`;
+    }
+
+    // charges
+    document.getElementById('mChargesTbody').innerHTML = inv.charges.map(c => `
+      <tr>
+        <td><span class="charge-type-badge ${chargeTypeCls[c.type]||'ct-room'}">${chargeTypeLbl[c.type]||c.type}</span></td>
+        <td>${c.desc}</td>
+        <td>${c.qty}.00</td>
+        <td>Rs ${c.unit.toLocaleString()}</td>
+        <td><strong>Rs ${c.total.toLocaleString()}</strong></td>
+      </tr>`).join('');
+
+    // set today's date
+    document.getElementById('payDate').value = new Date().toISOString().split('T')[0];
+    // hide collapsed sections
+    document.getElementById('addPaySection').style.display    = 'none';
+    document.getElementById('addChargeSection').style.display = 'none';
+
+    document.getElementById('invModal').classList.add('open');
+  }
+
+  function toggleAddPay()    { const s = document.getElementById('addPaySection');    s.style.display = s.style.display === 'none' ? '' : 'none'; }
+  function toggleAddCharge() { const s = document.getElementById('addChargeSection'); s.style.display = s.style.display === 'none' ? '' : 'none'; }
+  function closeM(id)   { document.getElementById(id).classList.remove('open'); }
+  function closeOut(e,id){ if(e.target===document.getElementById(id)) closeM(id); }
+  function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('open'); }
+  function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
+
+  renderInvoices();
+</script>
+</body>
+</html>

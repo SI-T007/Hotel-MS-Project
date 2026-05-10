@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Expenses — Hotel Management System</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    /* Summary cards */
+    .exp-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;}
+    .exp-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;box-shadow:var(--shadow-sm);}
+    .exp-card-label{font-size:12px;color:var(--text-muted);margin-bottom:4px;}
+    .exp-card-amount{font-size:22px;font-weight:700;color:var(--text);letter-spacing:-.5px;}
+    .exp-card-amount.orange{color:var(--orange);}
+    .exp-card-amount.green{color:var(--green);}
+    .exp-card-sub{font-size:11px;color:var(--text-muted);margin-top:3px;}
+
+    /* Tabs */
+    .exp-tabs{display:flex;align-items:center;gap:4px;flex-wrap:wrap;}
+    .exp-tab{padding:5px 13px;border-radius:20px;font-size:13px;font-weight:500;color:var(--text-muted);cursor:pointer;border:1px solid var(--border);background:var(--white);font-family:inherit;transition:all .15s;}
+    .exp-tab:hover{border-color:var(--text-muted);color:var(--text);}
+    .exp-tab.active{background:var(--primary);color:#fff;border-color:var(--primary);}
+
+    /* Toolbar */
+    .toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap;}
+    .toolbar-left{display:flex;align-items:center;gap:8px;flex:1;flex-wrap:wrap;}
+
+    .search-sm{position:relative;flex:1;min-width:160px;max-width:240px;}
+    .search-sm svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);width:14px;height:14px;color:var(--text-muted);pointer-events:none;}
+    .search-sm input{width:100%;padding:7px 10px 7px 30px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:inherit;color:var(--text);background:var(--white);outline:none;}
+    .search-sm input:focus{border-color:var(--primary);}
+    .search-sm input::placeholder{color:var(--text-light);}
+
+    .prop-sel{display:flex;align-items:center;gap:5px;padding:7px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-weight:500;color:var(--text);background:var(--white);cursor:pointer;font-family:inherit;white-space:nowrap;}
+    .prop-sel svg{width:13px;height:13px;color:var(--text-muted);}
+
+    /* Table */
+    .a-lnk{color:var(--primary);font-size:13px;font-weight:600;cursor:pointer;margin-right:8px;}
+    .a-lnk:hover{text-decoration:underline;}
+    .muted{color:var(--text-muted);}
+
+    /* Empty state */
+    .empty-state{padding:40px;text-align:center;color:var(--text-muted);font-size:13.5px;}
+
+    /* Table footer */
+    .tf{display:flex;align-items:center;justify-content:space-between;padding:12px 20px;border-top:1px solid var(--border);font-size:12.5px;color:var(--text-muted);}
+    .pgb{display:flex;gap:4px;}
+    .pb{width:28px;height:28px;border:1px solid var(--border);border-radius:6px;background:var(--white);cursor:pointer;font-size:12px;font-family:inherit;color:var(--text-muted);display:flex;align-items:center;justify-content:center;}
+    .pb:hover{background:var(--bg);}
+    .pb.active{background:var(--primary);color:#fff;border-color:var(--primary);font-weight:700;}
+
+    /* ── Add Expense Modal ── */
+    .modal-exp{max-width:480px;}
+
+    /* ── Manage Categories Modal ── */
+    .modal-cat{max-width:400px;}
+    .cat-section-title{font-size:10px;font-weight:700;letter-spacing:.7px;text-transform:uppercase;color:var(--text-muted);margin-bottom:10px;}
+
+    .color-picker{display:flex;gap:6px;flex-wrap:wrap;align-items:center;}
+    .color-dot{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .15s;}
+    .color-dot:hover{transform:scale(1.15);}
+    .color-dot.selected{border-color:var(--text);transform:scale(1.1);}
+
+    .cat-list{margin-top:16px;}
+    .cat-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--bg);font-size:13.5px;}
+    .cat-item:last-child{border-bottom:none;}
+    .cat-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+    .cat-item-name{flex:1;}
+    .cat-del{color:var(--red);cursor:pointer;font-size:12px;font-weight:600;}
+    .cat-del:hover{text-decoration:underline;}
+
+    @media(max-width:768px){
+      .exp-summary{grid-template-columns:repeat(2,1fr);}
+      thead th:nth-child(3),tbody td:nth-child(3),
+      thead th:nth-child(4),tbody td:nth-child(4),
+      thead th:nth-child(5),tbody td:nth-child(5){display:none;}
+    }
+    @media(max-width:480px){
+      .exp-summary{grid-template-columns:1fr 1fr;}
+      .toolbar{flex-direction:column;align-items:stretch;}
+      .search-sm{max-width:100%;}
+    }
+  </style>
+</head>
+<body class="layout-app">
+
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+    <span class="brand-name">Royal Brangsa</span>
+  </div>
+  <div class="sidebar-section-label">Operations</div>
+  <a href="index.html"    class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+  <a href="front-desk.html"   class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Front Desk</a>
+  <a href="bookings.html"     class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Bookings</a>
+  <a href="new-booking.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>New Booking</a>
+  <a href="guests.html"       class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Guests</a>
+  <a href="rooms-floors.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Rooms &amp; Floors</a>
+  <div class="sidebar-section-label">Finance</div>
+  <a href="invoices.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Invoices</a>
+  <a href="payments.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Payments</a>
+  <a href="expenses.html"  class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Expenses</a>
+  <a href="cashflow.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>Cash Flow</a>
+  <div class="sidebar-section-label">Reports</div>
+  <a href="analytics.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics &amp; Performance</a>
+  <div class="sidebar-bottom">
+    <a href="staff-management.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Staff Management</a>
+    <a href="business-settings.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/></svg>Business Settings</a>
+    <div class="user-card">
+      <div class="user-avatar">K</div>
+      <div class="user-info"><div class="user-name">Kacho Karman</div><div class="user-role">Manager</div></div>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" onclick="toggleSidebar()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <span class="topbar-title">Expenses</span>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-secondary" onclick="openCatModal()">Manage Categories</button>
+      <button class="btn-primary" onclick="openAddExpense()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Expense
+      </button>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="page-header">
+      <h1>Expenses</h1>
+      <div style="font-size:13px;color:var(--text-muted);margin-top:2px;" id="expMeta">0 records</div>
+    </div>
+
+    <!-- Summary -->
+    <div class="exp-summary">
+      <div class="exp-card">
+        <div class="exp-card-label">Total Expenses</div>
+        <div class="exp-card-amount" id="sumTotal">Rs 0</div>
+        <div class="exp-card-sub" id="sumEntries">0 entries</div>
+      </div>
+      <div class="exp-card">
+        <div class="exp-card-label">Pending Approval</div>
+        <div class="exp-card-amount orange" id="sumPending">Rs 0</div>
+        <div class="exp-card-sub">Submitted</div>
+      </div>
+      <div class="exp-card">
+        <div class="exp-card-label">Approved</div>
+        <div class="exp-card-amount green" id="sumApproved">Rs 0</div>
+        <div class="exp-card-sub">Ready to pay</div>
+      </div>
+      <div class="exp-card">
+        <div class="exp-card-label">Paid</div>
+        <div class="exp-card-amount" id="sumPaid">Rs 0</div>
+        <div class="exp-card-sub">Settled</div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="exp-tabs">
+        <button class="exp-tab active" onclick="filterExp('all',this)">All</button>
+        <button class="exp-tab" onclick="filterExp('draft',this)">Draft</button>
+        <button class="exp-tab" onclick="filterExp('submitted',this)">Submitted</button>
+        <button class="exp-tab" onclick="filterExp('approved',this)">Approved</button>
+        <button class="exp-tab" onclick="filterExp('rejected',this)">Rejected</button>
+        <button class="exp-tab" onclick="filterExp('paid',this)">Paid</button>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <div class="prop-sel">
+          All Properties
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="search-sm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" placeholder="Search title, vendor..." oninput="searchExp(this.value)"/>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>Date</th><th>Title</th><th>Category</th><th>Vendor</th><th>Payment Method</th><th>Amount</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="expTbody"></tbody>
+        </table>
+      </div>
+      <div id="emptyState" class="empty-state" style="display:none;">No expenses found.</div>
+      <div class="tf">
+        <span id="expInfo">0 records</span>
+        <div class="pgb">
+          <button class="pb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <button class="pb active">1</button>
+          <button class="pb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL 1: Add Expense ══ -->
+<div class="modal-overlay" id="addExpModal" onclick="closeOut(event,'addExpModal')">
+  <div class="modal modal-exp">
+    <div class="modal-header">
+      <div class="modal-title">Add Expense</div>
+      <button class="modal-close" onclick="closeM('addExpModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Title</label>
+        <input type="text" class="form-input" id="eTitle" placeholder="e.g. Kitchen supplies restock"/>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Property</label>
+          <select class="form-select" id="eProp">
+            <option>Skardu Main Branch</option>
+            <option>Shigar branch</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Category</label>
+          <select class="form-select" id="eCat">
+            <option value="">— None —</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Amount (PKR) *</label>
+          <input type="number" class="form-input" id="eAmount" value="0.00" min="0" step="0.01"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input type="date" class="form-input" id="eDate"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Vendor</label>
+          <input type="text" class="form-input" id="eVendor" placeholder="e.g. Metro Wholesale"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Payment Method</label>
+          <select class="form-select" id="ePayMethod">
+            <option value="">— None —</option>
+            <option>Cash</option>
+            <option>Bank Transfer</option>
+            <option>Credit Card</option>
+            <option>Online</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Reference</label>
+        <input type="text" class="form-input" id="eRef" placeholder="Optional"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <textarea class="form-textarea" id="eDesc" placeholder="Additional details..." style="min-height:70px;"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="eNotes" placeholder="Visible internally only..." style="min-height:60px;"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeM('addExpModal')">Cancel</button>
+      <button class="btn-primary" onclick="saveExpense()">Save Expense</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL 2: Manage Categories ══ -->
+<div class="modal-overlay" id="catModal" onclick="closeOut(event,'catModal')">
+  <div class="modal modal-cat">
+    <div class="modal-header">
+      <div class="modal-title">Expense Categories</div>
+      <button class="modal-close" onclick="closeM('catModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="cat-section-title">New Category</div>
+      <div class="form-row" style="align-items:flex-end;gap:12px;margin-bottom:10px;">
+        <div class="form-group" style="flex:1;margin-bottom:0;">
+          <label class="form-label">Name *</label>
+          <input type="text" class="form-input" id="catName" placeholder="e.g. Utilities"/>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">Color</label>
+          <div class="color-picker" id="colorPicker">
+            <div class="color-dot selected" style="background:#ef4444;" data-color="#ef4444" onclick="selectColor(this)"></div>
+            <div class="color-dot" style="background:#f59e0b;" data-color="#f59e0b" onclick="selectColor(this)"></div>
+            <div class="color-dot" style="background:#22c55e;" data-color="#22c55e" onclick="selectColor(this)"></div>
+            <div class="color-dot" style="background:#3b82f6;" data-color="#3b82f6" onclick="selectColor(this)"></div>
+            <div class="color-dot" style="background:#8b5cf6;" data-color="#8b5cf6" onclick="selectColor(this)"></div>
+            <div class="color-dot" style="background:#06b6d4;" data-color="#06b6d4" onclick="selectColor(this)"></div>
+            <div class="color-dot" style="background:#ec4899;" data-color="#ec4899" onclick="selectColor(this)"></div>
+            <div class="color-dot" style="background:#64748b;" data-color="#64748b" onclick="selectColor(this)"></div>
+            <div class="color-dot" style="background:#1a1d2e;" data-color="#1a1d2e" onclick="selectColor(this)"></div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <input type="text" class="form-input" id="catDesc" placeholder="Optional"/>
+      </div>
+      <button class="btn-primary" style="width:100%;justify-content:center;" onclick="addCategory()">Add Category</button>
+
+      <div class="cat-list" id="catList"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-primary" onclick="closeM('catModal')">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let expenses  = [];
+  let categories = [];
+  let selectedColor = '#ef4444';
+  let curFilter = 'all';
+  let curSearch = '';
+
+  const statusMap = { draft:'badge-draft', submitted:'badge-pending', approved:'badge-confirmed', rejected:'badge-cancelled', paid:'badge-paid' };
+  const statusLbl = { draft:'Draft', submitted:'Submitted', approved:'Approved', rejected:'Rejected', paid:'Paid' };
+
+  function updateSummary() {
+    const total    = expenses.reduce((s,e) => s + e.amount, 0);
+    const pending  = expenses.filter(e => e.status === 'submitted').reduce((s,e) => s + e.amount, 0);
+    const approved = expenses.filter(e => e.status === 'approved').reduce((s,e) => s + e.amount, 0);
+    const paid     = expenses.filter(e => e.status === 'paid').reduce((s,e) => s + e.amount, 0);
+    document.getElementById('sumTotal').textContent    = 'Rs ' + total.toLocaleString();
+    document.getElementById('sumPending').textContent  = 'Rs ' + pending.toLocaleString();
+    document.getElementById('sumApproved').textContent = 'Rs ' + approved.toLocaleString();
+    document.getElementById('sumPaid').textContent     = 'Rs ' + paid.toLocaleString();
+    document.getElementById('sumEntries').textContent  = expenses.length + ' entries';
+    document.getElementById('expMeta').textContent     = expenses.length + ' record' + (expenses.length !== 1 ? 's' : '');
+  }
+
+  function renderTable() {
+    const list = expenses.filter(e => {
+      const matchFilter = curFilter === 'all' || e.status === curFilter;
+      const matchSearch = e.title.toLowerCase().includes(curSearch) || (e.vendor||'').toLowerCase().includes(curSearch);
+      return matchFilter && matchSearch;
+    });
+
+    const tbody = document.getElementById('expTbody');
+    tbody.innerHTML = list.map((e,i) => `
+      <tr>
+        <td>${e.date}</td>
+        <td><strong>${e.title}</strong></td>
+        <td class="muted">${e.category || '—'}</td>
+        <td class="muted">${e.vendor || '—'}</td>
+        <td class="muted">${e.payMethod || '—'}</td>
+        <td><strong>Rs ${e.amount.toLocaleString()}</strong></td>
+        <td><span class="badge ${statusMap[e.status]}">${statusLbl[e.status]}</span></td>
+        <td>
+          <span class="a-lnk">View</span>
+          <span class="a-lnk">Edit</span>
+        </td>
+      </tr>`).join('');
+
+    document.getElementById('emptyState').style.display = list.length ? 'none' : 'block';
+    document.getElementById('expInfo').textContent = list.length + ' record' + (list.length !== 1 ? 's' : '');
+  }
+
+  function filterExp(status, el) {
+    curFilter = status;
+    document.querySelectorAll('.exp-tab').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    renderTable();
+  }
+
+  function searchExp(val) { curSearch = val.toLowerCase(); renderTable(); }
+
+  function openAddExpense() {
+    ['eTitle','eVendor','eRef','eDesc','eNotes'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('eAmount').value = '0.00';
+    document.getElementById('eDate').value   = new Date().toISOString().split('T')[0];
+    document.getElementById('ePayMethod').value = '';
+    updateCatDropdown();
+    closeM('catModal');
+    document.getElementById('addExpModal').classList.add('open');
+  }
+
+  function updateCatDropdown() {
+    const sel = document.getElementById('eCat');
+    sel.innerHTML = '<option value="">— None —</option>' + categories.map(c => `<option>${c.name}</option>`).join('');
+  }
+
+  function saveExpense() {
+    const title = document.getElementById('eTitle').value.trim();
+    if (!title) { document.getElementById('eTitle').focus(); return; }
+    expenses.unshift({
+      title,
+      date:      document.getElementById('eDate').value || new Date().toLocaleDateString('en-GB').replace(/\//g,'/'),
+      category:  document.getElementById('eCat').value || '',
+      vendor:    document.getElementById('eVendor').value.trim(),
+      payMethod: document.getElementById('ePayMethod').value,
+      amount:    parseFloat(document.getElementById('eAmount').value) || 0,
+      status:    'draft',
+    });
+    updateSummary();
+    renderTable();
+    closeM('addExpModal');
+  }
+
+  // Categories
+  function openCatModal() {
+    renderCatList();
+    document.getElementById('catModal').classList.add('open');
+  }
+
+  function selectColor(dot) {
+    document.querySelectorAll('.color-dot').forEach(d => d.classList.remove('selected'));
+    dot.classList.add('selected');
+    selectedColor = dot.dataset.color;
+  }
+
+  function addCategory() {
+    const name = document.getElementById('catName').value.trim();
+    if (!name) { document.getElementById('catName').focus(); return; }
+    if (categories.find(c => c.name === name)) return;
+    categories.push({ name, color: selectedColor, desc: document.getElementById('catDesc').value.trim() });
+    document.getElementById('catName').value = '';
+    document.getElementById('catDesc').value = '';
+    renderCatList();
+    updateCatDropdown();
+  }
+
+  function renderCatList() {
+    document.getElementById('catList').innerHTML = categories.length
+      ? categories.map((c,i) => `
+          <div class="cat-item">
+            <span class="cat-dot" style="background:${c.color}"></span>
+            <span class="cat-item-name">${c.name}</span>
+            <span class="cat-del" onclick="deleteCat(${i})">Delete</span>
+          </div>`).join('')
+      : '<div style="font-size:13px;color:var(--text-muted);padding:10px 0;">No categories yet.</div>';
+  }
+
+  function deleteCat(i) { categories.splice(i,1); renderCatList(); updateCatDropdown(); }
+
+  function closeM(id)    { document.getElementById(id).classList.remove('open'); }
+  function closeOut(e,id){ if(e.target===document.getElementById(id)) closeM(id); }
+  function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('open'); }
+  function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
+
+  // init
+  updateSummary();
+  renderTable();
+</script>
+</body>
+</html>

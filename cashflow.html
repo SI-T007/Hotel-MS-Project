@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Cash Flow — Hotel Management System</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    /* Period tabs */
+    .period-tabs{display:flex;gap:2px;background:var(--bg);padding:3px;border-radius:var(--radius-sm);border:1px solid var(--border);}
+    .period-tab{padding:5px 14px;border-radius:6px;font-size:12.5px;font-weight:500;color:var(--text-muted);cursor:pointer;border:none;background:none;font-family:inherit;transition:all .15s;white-space:nowrap;}
+    .period-tab:hover{color:var(--text);}
+    .period-tab.active{background:var(--white);color:var(--text);box-shadow:var(--shadow-sm);font-weight:600;}
+
+    /* Top row */
+    .cf-top{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;}
+
+    /* Inflow/Outflow/Net cards */
+    .cf-summary{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;}
+    .cf-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;box-shadow:var(--shadow-sm);}
+    .cf-card-label{font-size:11px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;}
+    .cf-card-amount{font-size:26px;font-weight:700;letter-spacing:-.6px;color:var(--text);}
+    .cf-card-amount.green{color:var(--green);}
+    .cf-card-amount.red{color:var(--red);}
+    .cf-card-amount.net-pos{color:#15803d;}
+    .cf-card-sub{font-size:12px;color:var(--text-muted);margin-top:4px;}
+    .cf-net-card{background:#f0fdf4;border-color:#bbf7d0;}
+    .cf-net-card .cf-card-label{color:#15803d;}
+
+    /* Main content grid */
+    .cf-grid{display:grid;grid-template-columns:1fr 300px;gap:16px;align-items:start;}
+
+    /* Chart card */
+    .chart-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:20px;box-shadow:var(--shadow-sm);}
+    .chart-title{font-size:14px;font-weight:700;color:var(--text);margin-bottom:16px;}
+    .chart-area{position:relative;height:200px;width:100%;}
+
+    /* SVG chart */
+    .chart-svg{width:100%;height:100%;}
+
+    /* Tooltip */
+    .chart-tooltip{
+      position:absolute;background:var(--text);color:#fff;
+      padding:8px 12px;border-radius:8px;font-size:12px;
+      pointer-events:none;display:none;z-index:10;white-space:nowrap;
+      box-shadow:0 4px 12px rgba(0,0,0,.2);
+    }
+    .chart-tooltip strong{display:block;margin-bottom:2px;}
+
+    /* Chart legend */
+    .chart-legend{display:flex;gap:16px;margin-top:12px;flex-wrap:wrap;}
+    .legend-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);}
+    .legend-dot{width:10px;height:10px;border-radius:2px;flex-shrink:0;}
+
+    /* Right panel */
+    .side-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow-sm);margin-bottom:14px;}
+    .side-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:14px;}
+
+    /* By Method */
+    .method-row{margin-bottom:12px;}
+    .method-row:last-child{margin-bottom:0;}
+    .method-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;}
+    .method-badge{display:inline-flex;align-items:center;padding:2px 10px;border-radius:20px;font-size:11.5px;font-weight:600;}
+    .mb-cash  {background:#dcfce7;color:#15803d;}
+    .mb-online{background:#fef3c7;color:#854d0e;}
+    .mb-bank  {background:#ede9fe;color:#6d28d9;}
+    .method-amount{font-size:13px;font-weight:600;color:var(--text);}
+    .method-sub{font-size:11px;color:var(--text-muted);}
+    .method-bar{height:5px;background:var(--border);border-radius:3px;margin-top:4px;overflow:hidden;}
+    .method-bar-fill{height:100%;border-radius:3px;}
+
+    /* By Category empty */
+    .no-data{font-size:13px;color:var(--text-muted);padding:8px 0;}
+
+    @media(max-width:1024px){
+      .cf-grid{grid-template-columns:1fr;}
+    }
+    @media(max-width:640px){
+      .cf-summary{grid-template-columns:1fr;}
+      .period-tabs{overflow-x:auto;flex-wrap:nowrap;}
+      .cf-top{flex-direction:column;align-items:stretch;}
+    }
+  </style>
+</head>
+<body class="layout-app">
+
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+    <span class="brand-name">Royal Brangsa</span>
+  </div>
+  <div class="sidebar-section-label">Operations</div>
+  <a href="index.html"    class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+  <a href="front-desk.html"   class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Front Desk</a>
+  <a href="bookings.html"     class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Bookings</a>
+  <a href="new-booking.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>New Booking</a>
+  <a href="guests.html"       class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Guests</a>
+  <a href="rooms-floors.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Rooms &amp; Floors</a>
+  <div class="sidebar-section-label">Finance</div>
+  <a href="invoices.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Invoices</a>
+  <a href="payments.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Payments</a>
+  <a href="expenses.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Expenses</a>
+  <a href="cashflow.html"  class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>Cash Flow</a>
+  <div class="sidebar-section-label">Reports</div>
+  <a href="analytics.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics &amp; Performance</a>
+  <div class="sidebar-bottom">
+    <a href="staff-management.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Staff Management</a>
+    <a href="business-settings.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/></svg>Business Settings</a>
+    <div class="user-card">
+      <div class="user-avatar">K</div>
+      <div class="user-info"><div class="user-name">Kacho Karman</div><div class="user-role">Manager</div></div>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" onclick="toggleSidebar()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg></button>
+      <span class="topbar-title">Cash Flow</span>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="cf-top">
+      <div>
+        <h1 style="font-size:22px;font-weight:700;letter-spacing:-.4px;">Cash Flow</h1>
+        <div style="font-size:13px;color:var(--text-muted);margin-top:2px;">28/02/2026 — 19/03/2026</div>
+      </div>
+      <div class="period-tabs">
+        <button class="period-tab active" onclick="setPeriod(this)">This Month</button>
+        <button class="period-tab" onclick="setPeriod(this)">Last Month</button>
+        <button class="period-tab" onclick="setPeriod(this)">This Quarter</button>
+        <button class="period-tab" onclick="setPeriod(this)">Last Quarter</button>
+        <button class="period-tab" onclick="setPeriod(this)">This Year</button>
+        <button class="period-tab" onclick="setPeriod(this)">Custom</button>
+      </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="cf-summary">
+      <div class="cf-card">
+        <div class="cf-card-label">Inflows</div>
+        <div class="cf-card-amount green">Rs 62,600</div>
+        <div class="cf-card-sub">14 payments received</div>
+      </div>
+      <div class="cf-card">
+        <div class="cf-card-label">Outflows</div>
+        <div class="cf-card-amount">Rs 0</div>
+        <div class="cf-card-sub">0 expenses paid</div>
+      </div>
+      <div class="cf-card cf-net-card">
+        <div class="cf-card-label">Net</div>
+        <div class="cf-card-amount net-pos">+Rs 62,600</div>
+        <div class="cf-card-sub">Positive cash flow</div>
+      </div>
+    </div>
+
+    <!-- Chart + Side panel -->
+    <div class="cf-grid">
+
+      <!-- Chart -->
+      <div class="chart-card">
+        <div class="chart-title">Cash Flow (daily)</div>
+        <div class="chart-area" id="chartArea">
+          <svg class="chart-svg" id="cfChart" viewBox="0 0 700 200" preserveAspectRatio="none"></svg>
+          <div class="chart-tooltip" id="tooltip"></div>
+        </div>
+        <div class="chart-legend">
+          <div class="legend-item"><div class="legend-dot" style="background:#22c55e;"></div>Inflows</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#ef4444;"></div>Outflows</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--primary);border-radius:50%;width:8px;height:8px;"></div>Cumulative Net</div>
+        </div>
+      </div>
+
+      <!-- Side Panel -->
+      <div>
+        <div class="side-card">
+          <div class="side-title">By Method</div>
+          <div class="method-row">
+            <div class="method-header">
+              <span class="method-badge mb-cash">Cash</span>
+              <span class="method-amount">Rs 38,900</span>
+            </div>
+            <div class="method-sub">10 transactions</div>
+            <div class="method-bar"><div class="method-bar-fill" style="width:62%;background:#22c55e;"></div></div>
+          </div>
+          <div class="method-row">
+            <div class="method-header">
+              <span class="method-badge mb-online">Online</span>
+              <span class="method-amount">Rs 18,200</span>
+            </div>
+            <div class="method-sub">3 transactions</div>
+            <div class="method-bar"><div class="method-bar-fill" style="width:29%;background:#f59e0b;"></div></div>
+          </div>
+          <div class="method-row">
+            <div class="method-header">
+              <span class="method-badge mb-bank">Bank Transfer</span>
+              <span class="method-amount">Rs 5,500</span>
+            </div>
+            <div class="method-sub">1 transaction</div>
+            <div class="method-bar"><div class="method-bar-fill" style="width:9%;background:#8b5cf6;"></div></div>
+          </div>
+        </div>
+
+        <div class="side-card">
+          <div class="side-title">By Category</div>
+          <div class="no-data">No outflows in period</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  function setPeriod(el) {
+    document.querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // Chart data — daily inflows for this month
+  const days = ['26 Feb','28 Feb','02 Mar','04 Mar','06 Mar','08 Mar','10 Mar','12 Mar','13 Mar','14 Mar','15 Mar','16 Mar','19 Mar'];
+  const inflows  = [0,0,0,0,0,0,0,3800,8700,0,7000,0,43100];
+  const outflows = [0,0,0,0,0,0,0,0,0,0,0,0,0];
+
+  function drawChart() {
+    const svg    = document.getElementById('cfChart');
+    const W = 700, H = 200, pad = { t:10, b:30, l:40, r:10 };
+    const cW = W - pad.l - pad.r;
+    const cH = H - pad.t - pad.b;
+    const maxVal = Math.max(...inflows, 60000);
+    const n = days.length;
+    const barW = Math.max(8, (cW / n) * 0.4);
+    const step  = cW / (n - 1);
+
+    let html = '';
+
+    // Y grid lines
+    for (let i = 0; i <= 4; i++) {
+      const y = pad.t + (cH * i / 4);
+      const val = Math.round(maxVal * (1 - i/4) / 1000);
+      html += `<line x1="${pad.l}" y1="${y}" x2="${W - pad.r}" y2="${y}" stroke="#e8eaf2" stroke-width="1"/>`;
+      html += `<text x="${pad.l - 6}" y="${y + 4}" font-size="9" fill="#8b8fa8" text-anchor="end">${val}k</text>`;
+    }
+
+    // Bars (inflows)
+    inflows.forEach((v, i) => {
+      if (v === 0) return;
+      const x   = pad.l + i * step - barW / 2;
+      const bH  = (v / maxVal) * cH;
+      const y   = pad.t + cH - bH;
+      html += `<rect x="${x}" y="${y}" width="${barW}" height="${bH}" fill="#22c55e" rx="3" opacity="0.85"
+        onmouseover="showTip(event,'${days[i]}',${v},0)" onmouseout="hideTip()"/>`;
+    });
+
+    // Cumulative net line
+    let cumulative = 0;
+    const pts = inflows.map((v, i) => {
+      cumulative += v - outflows[i];
+      const x = pad.l + i * step;
+      const y = pad.t + cH - (Math.min(cumulative, maxVal) / maxVal) * cH;
+      return `${x},${y}`;
+    });
+    html += `<polyline points="${pts.join(' ')}" fill="none" stroke="#4f6ef7" stroke-width="2" stroke-linejoin="round"/>`;
+
+    // Dots on line
+    cumulative = 0;
+    inflows.forEach((v, i) => {
+      cumulative += v - outflows[i];
+      const x = pad.l + i * step;
+      const y = pad.t + cH - (Math.min(cumulative, maxVal) / maxVal) * cH;
+      if (v > 0) {
+        html += `<circle cx="${x}" cy="${y}" r="4" fill="#4f6ef7" stroke="#fff" stroke-width="2"
+          onmouseover="showTip(event,'${days[i]}',${v},${cumulative})" onmouseout="hideTip()"/>`;
+      }
+    });
+
+    // X labels
+    days.forEach((d, i) => {
+      if (i % 2 === 0 || i === days.length - 1) {
+        const x = pad.l + i * step;
+        html += `<text x="${x}" y="${H - 6}" font-size="9" fill="#8b8fa8" text-anchor="middle">${d}</text>`;
+      }
+    });
+
+    svg.innerHTML = html;
+  }
+
+  function showTip(e, day, inflow, net) {
+    const tip = document.getElementById('tooltip');
+    tip.style.display = 'block';
+    tip.innerHTML = `<strong>${day}</strong>Inflows: Rs ${inflow.toLocaleString()}<br>Outflows: Rs 0<br>Cumulative Net: Rs ${net.toLocaleString()}`;
+    const rect = document.getElementById('chartArea').getBoundingClientRect();
+    tip.style.left = (e.clientX - rect.left + 12) + 'px';
+    tip.style.top  = (e.clientY - rect.top  - 10) + 'px';
+  }
+  function hideTip() { document.getElementById('tooltip').style.display = 'none'; }
+
+  function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('open'); }
+  function closeSidebar()  { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
+
+  drawChart();
+  window.addEventListener('resize', drawChart);
+</script>
+</body>
+</html>
