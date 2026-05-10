@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Analytics & Performance — Hotel Management System</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    /* ── Page header row ── */
+    .an-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .an-top h1 { font-size: 22px; font-weight: 700; letter-spacing: -.4px; }
+    .an-top .sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+    .an-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .prop-sel {
+      display: flex; align-items: center; gap: 6px;
+      padding: 7px 12px;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      font-size: 13px; font-weight: 500; color: var(--text);
+      background: var(--white); cursor: pointer; font-family: inherit;
+    }
+    .prop-sel svg { width: 13px; height: 13px; color: var(--text-muted); }
+
+    .period-tabs {
+      display: flex; gap: 2px;
+      background: var(--bg); padding: 3px;
+      border-radius: var(--radius-sm); border: 1px solid var(--border);
+    }
+    .period-tab {
+      padding: 5px 12px; border-radius: 6px;
+      font-size: 12.5px; font-weight: 500; color: var(--text-muted);
+      cursor: pointer; border: none; background: none;
+      font-family: inherit; transition: all .15s; white-space: nowrap;
+    }
+    .period-tab:hover { color: var(--text); }
+    .period-tab.active {
+      background: var(--primary); color: #fff;
+      box-shadow: var(--shadow-sm); font-weight: 600;
+    }
+
+    /* ── KPI grid (8 cards) ── */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    .kpi-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+      box-shadow: var(--shadow-sm);
+    }
+    .kpi-label {
+      font-size: 10.5px; font-weight: 700;
+      letter-spacing: .6px; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 6px;
+    }
+    .kpi-value {
+      font-size: 22px; font-weight: 700; color: var(--text);
+      letter-spacing: -.5px; line-height: 1;
+    }
+    .kpi-value.green { color: var(--green); }
+    .kpi-sub { font-size: 11.5px; color: var(--text-muted); margin-top: 4px; }
+
+    /* ── Chart cards ── */
+    .charts-row {
+      display: grid;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+    .charts-row-1 { grid-template-columns: 1fr; }
+    .charts-row-2 { grid-template-columns: 1fr 1fr; }
+
+    .chart-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .chart-header {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px; flex-wrap: wrap; gap: 8px;
+    }
+    .chart-title { font-size: 14px; font-weight: 700; color: var(--text); }
+    .chart-badge {
+      font-size: 11.5px; font-weight: 600; color: var(--text-muted);
+      background: var(--bg); padding: 3px 10px; border-radius: 20px;
+    }
+
+    .chart-wrap { position: relative; width: 100%; overflow: hidden; }
+    .chart-wrap svg { display: block; width: 100%; }
+
+    /* Legend */
+    .legend {
+      display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px;
+    }
+    .legend-item {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 12px; color: var(--text-muted);
+    }
+    .legend-dot {
+      width: 9px; height: 9px; border-radius: 2px; flex-shrink: 0;
+    }
+    .legend-dot.circle { border-radius: 50%; }
+
+    /* Empty state */
+    .no-data {
+      display: flex; align-items: center; justify-content: center;
+      height: 160px;
+      font-size: 13px; color: var(--text-muted);
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 1100px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 768px) {
+      .charts-row-2 { grid-template-columns: 1fr; }
+      .an-controls { width: 100%; }
+      .period-tabs { overflow-x: auto; flex-wrap: nowrap; width: 100%; }
+    }
+    @media (max-width: 540px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .kpi-value { font-size: 18px; }
+      .an-top { flex-direction: column; align-items: stretch; }
+    }
+  </style>
+</head>
+<body class="layout-app">
+
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+    <span class="brand-name">Royal Brangsa</span>
+  </div>
+  <div class="sidebar-section-label">Operations</div>
+  <a href="index.html"    class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+  <a href="front-desk.html"   class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Front Desk</a>
+  <a href="bookings.html"     class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Bookings</a>
+  <a href="new-booking.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>New Booking</a>
+  <a href="guests.html"       class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Guests</a>
+  <a href="rooms-floors.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Rooms &amp; Floors</a>
+  <div class="sidebar-section-label">Finance</div>
+  <a href="invoices.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Invoices</a>
+  <a href="payments.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Payments</a>
+  <a href="expenses.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Expenses</a>
+  <a href="cashflow.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>Cash Flow</a>
+  <div class="sidebar-section-label">Reports</div>
+  <a href="analytics.html" class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics &amp; Performance</a>
+  <div class="sidebar-section-label">Management</div>
+  <a href="staff-management.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Staff Management</a>
+  <a href="business-settings.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>Business Settings</a>
+  <div class="sidebar-bottom">
+    <div class="user-card">
+      <div class="user-avatar">K</div>
+      <div class="user-info"><div class="user-name">Kacho Karman</div><div class="user-role">Manager</div></div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" onclick="toggleSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <span class="topbar-title">Analytics &amp; Performance</span>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <!-- Page header + controls -->
+    <div class="an-top">
+      <div>
+        <h1>Analytics &amp; Performance</h1>
+        <div class="sub">Year-to-date metrics and historical trends</div>
+      </div>
+      <div class="an-controls">
+        <div class="prop-sel">
+          All Properties
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="period-tabs">
+          <button class="period-tab" onclick="setPeriod(this)">6 Months</button>
+          <button class="period-tab active" onclick="setPeriod(this)">12 Months</button>
+          <button class="period-tab" onclick="setPeriod(this)">24 Months</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Revenue YTD</div>
+        <div class="kpi-value">Rs 62,600</div>
+        <div class="kpi-sub green" style="color:var(--green);">Net: Rs 62,600</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">ADR</div>
+        <div class="kpi-value">Rs 3,020</div>
+        <div class="kpi-sub">Per occupied room-night</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">RevPAR</div>
+        <div class="kpi-value">Rs 80</div>
+        <div class="kpi-sub">Revenue per available room</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Occupancy Rate</div>
+        <div class="kpi-value">4.5%</div>
+        <div class="kpi-sub">35 room-nights sold</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Expenses YTD</div>
+        <div class="kpi-value">Rs 0</div>
+        <div class="kpi-sub">Paid expenses only</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Net Revenue YTD</div>
+        <div class="kpi-value green">Rs 62,600</div>
+        <div class="kpi-sub">&nbsp;</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Total Bookings YTD</div>
+        <div class="kpi-value">25</div>
+        <div class="kpi-sub">Avg. Length of Stay: 1.4 nights</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Total Rooms</div>
+        <div class="kpi-value">10</div>
+        <div class="kpi-sub">Across all properties</div>
+      </div>
+    </div>
+
+    <!-- Revenue vs Expenses chart -->
+    <div class="charts-row charts-row-1">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Revenue vs Expenses</div>
+          <div class="chart-badge">Monthly breakdown</div>
+        </div>
+        <div class="chart-wrap" id="revExpWrap">
+          <svg id="revExpChart" viewBox="0 0 700 180" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--primary);"></div>Revenue</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--green);"></div>Expenses</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Occupancy + Booking trends -->
+    <div class="charts-row charts-row-2">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Occupancy Trend</div>
+        </div>
+        <div class="chart-wrap">
+          <svg id="occChart" viewBox="0 0 340 160" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot circle" style="background:var(--primary);"></div>Occupancy %</div>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Booking Trends</div>
+        </div>
+        <div class="chart-wrap">
+          <svg id="bookChart" viewBox="0 0 340 160" preserveAspectRatio="none"></svg>
+        </div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--green);"></div>Confirmed</div>
+          <div class="legend-item"><div class="legend-dot" style="background:#f87171;"></div>Checked Out</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--red);"></div>Cancelled</div>
+          <div class="legend-item"><div class="legend-dot" style="background:var(--text-muted);"></div>No Show</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Revenue by Room Type + Expenses by Category -->
+    <div class="charts-row charts-row-2">
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Revenue by Room Type</div>
+          <div class="chart-badge">YTD</div>
+        </div>
+        <div class="chart-wrap">
+          <svg id="roomRevChart" viewBox="0 0 340 200" preserveAspectRatio="none"></svg>
+        </div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-header">
+          <div class="chart-title">Expenses by Category</div>
+          <div class="chart-badge">YTD · Paid only</div>
+        </div>
+        <div class="no-data">No data yet.</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  function setPeriod(el) {
+    document.querySelectorAll('.period-tab').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+  }
+
+  // ── Revenue vs Expenses bar chart ──
+  function drawRevExp() {
+    const svg = document.getElementById('revExpChart');
+    const W=700, H=180, pad={t:10,b:30,l:50,r:10};
+    const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
+    const months=['May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar'];
+    const rev=[0,0,0,0,0,0,0,0,0,0,62600];
+    const exp=[0,0,0,0,0,0,0,0,0,0,0];
+    const maxV=70000;
+    const n=months.length;
+    const grpW=(cW/n);
+    const bW=Math.max(6, grpW*0.3);
+    let html='';
+
+    // grid
+    [0,0.25,0.5,0.75,1].forEach(r=>{
+      const y=pad.t+(cH*r);
+      const v=Math.round(maxV*(1-r)/1000);
+      html+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="#e8eaf2" stroke-width="1"/>`;
+      html+=`<text x="${pad.l-6}" y="${y+4}" font-size="9" fill="#8b8fa8" text-anchor="end">${v}k</text>`;
+    });
+
+    months.forEach((m,i)=>{
+      const cx=pad.l+(i+0.5)*grpW;
+      // rev bar
+      if(rev[i]>0){
+        const bH=(rev[i]/maxV)*cH;
+        html+=`<rect x="${cx-bW-1}" y="${pad.t+cH-bH}" width="${bW}" height="${bH}" fill="#4f6ef7" rx="3"/>`;
+      }
+      // exp bar
+      if(exp[i]>0){
+        const bH=(exp[i]/maxV)*cH;
+        html+=`<rect x="${cx+1}" y="${pad.t+cH-bH}" width="${bW}" height="${bH}" fill="#22c55e" rx="3"/>`;
+      }
+      html+=`<text x="${cx}" y="${H-8}" font-size="9" fill="#8b8fa8" text-anchor="middle">${m}</text>`;
+    });
+    svg.innerHTML=html;
+  }
+
+  // ── Occupancy line chart ──
+  function drawOccupancy() {
+    const svg=document.getElementById('occChart');
+    const W=340,H=160,pad={t:10,b:30,l:36,r:10};
+    const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
+    const months=['May','Jul','Sep','Nov','Jan','Mar'];
+    const vals=[0,0,0,0,0,4.5];
+    const maxV=100;
+    let html='';
+
+    // grid
+    [0,25,50,75,100].forEach(v=>{
+      const y=pad.t+cH*(1-v/maxV);
+      html+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="#e8eaf2" stroke-width="1"/>`;
+      html+=`<text x="${pad.l-4}" y="${y+4}" font-size="9" fill="#8b8fa8" text-anchor="end">${v}%</text>`;
+    });
+
+    const n=months.length;
+    const pts=vals.map((v,i)=>{
+      const x=pad.l+(i/(n-1))*cW;
+      const y=pad.t+cH*(1-v/maxV);
+      return `${x},${y}`;
+    });
+    html+=`<polyline points="${pts.join(' ')}" fill="none" stroke="#4f6ef7" stroke-width="2" stroke-linejoin="round"/>`;
+
+    vals.forEach((v,i)=>{
+      const x=pad.l+(i/(n-1))*cW;
+      const y=pad.t+cH*(1-v/maxV);
+      html+=`<circle cx="${x}" cy="${y}" r="3.5" fill="#4f6ef7" stroke="#fff" stroke-width="2"/>`;
+      html+=`<text x="${x}" y="${H-8}" font-size="9" fill="#8b8fa8" text-anchor="middle">${months[i]}</text>`;
+    });
+    svg.innerHTML=html;
+  }
+
+  // ── Booking trends grouped bars ──
+  function drawBookings() {
+    const svg=document.getElementById('bookChart');
+    const W=340,H=160,pad={t:10,b:30,l:30,r:10};
+    const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
+    const months=['May','Jul','Sep','Nov','Jan','Mar'];
+    const confirmed=[0,0,0,0,0,18];
+    const checkedOut=[0,0,0,0,0,5];
+    const cancelled=[0,0,0,0,0,1];
+    const noShow=[0,0,0,0,0,1];
+    const maxV=24;
+    const n=months.length;
+    const grpW=cW/n;
+    const bW=Math.max(5,grpW*0.18);
+    let html='';
+
+    [0,6,12,18,24].forEach(v=>{
+      const y=pad.t+cH*(1-v/maxV);
+      html+=`<line x1="${pad.l}" y1="${y}" x2="${W-pad.r}" y2="${y}" stroke="#e8eaf2" stroke-width="1"/>`;
+      html+=`<text x="${pad.l-4}" y="${y+4}" font-size="9" fill="#8b8fa8" text-anchor="end">${v}</text>`;
+    });
+
+    const colors=['#22c55e','#f87171','#ef4444','#94a3b8'];
+    const datasets=[confirmed,checkedOut,cancelled,noShow];
+    months.forEach((m,i)=>{
+      const cx=pad.l+(i+0.5)*grpW;
+      datasets.forEach((ds,di)=>{
+        if(ds[i]>0){
+          const bH=(ds[i]/maxV)*cH;
+          const x=cx-((datasets.length/2)-di-0.5)*(bW+2);
+          html+=`<rect x="${x-bW/2}" y="${pad.t+cH-bH}" width="${bW}" height="${bH}" fill="${colors[di]}" rx="2"/>`;
+        }
+      });
+      html+=`<text x="${cx}" y="${H-8}" font-size="9" fill="#8b8fa8" text-anchor="middle">${m}</text>`;
+    });
+    svg.innerHTML=html;
+  }
+
+  // ── Revenue by Room Type horizontal bars ──
+  function drawRoomRev() {
+    const svg=document.getElementById('roomRevChart');
+    const W=340,H=200,pad={t:10,b:10,l:80,r:40};
+    const cW=W-pad.l-pad.r, cH=H-pad.t-pad.b;
+    const rooms=[
+      {name:'Couple Room', val:20000, color:'#3b82f6'},
+      {name:'Luxury Room',  val:17500, color:'#8b5cf6'},
+      {name:'Dpluex room',  val:14000, color:'#f59e0b'},
+      {name:'Family Room',  val:8000,  color:'#22c55e'},
+      {name:'Duble room',   val:3100,  color:'#ef4444'},
+    ];
+    const maxV=22000;
+    const rowH=cH/rooms.length;
+    const barH=Math.max(16,rowH*0.55);
+    let html='';
+
+    rooms.forEach((r,i)=>{
+      const y=pad.t+i*rowH+(rowH-barH)/2;
+      const bW=(r.val/maxV)*cW;
+      html+=`<text x="${pad.l-8}" y="${y+barH/2+4}" font-size="10" fill="#1a1d2e" text-anchor="end">${r.name}</text>`;
+      html+=`<rect x="${pad.l}" y="${y}" width="${bW}" height="${barH}" fill="${r.color}" rx="4" opacity="0.85"/>`;
+      html+=`<text x="${pad.l+bW+6}" y="${y+barH/2+4}" font-size="10" fill="#8b8fa8">Rs ${(r.val/1000).toFixed(1)}k</text>`;
+    });
+
+    // x-axis labels
+    [0,5,10,15,20].forEach(v=>{
+      const x=pad.l+(v/22)*cW;
+      html+=`<text x="${x}" y="${H-2}" font-size="8" fill="#8b8fa8" text-anchor="middle">Rs ${v}k</text>`;
+    });
+    svg.innerHTML=html;
+  }
+
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('open');
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('open');
+  }
+
+  // Draw all charts
+  drawRevExp();
+  drawOccupancy();
+  drawBookings();
+  drawRoomRev();
+</script>
+</body>
+</html>
