@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Payments — Hotel Management System</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .page-meta { font-size:13px; color:var(--text-muted); margin-top:2px; }
+
+    /* Summary cards */
+    .pay-summary { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:20px; }
+    .pay-card {
+      background:var(--white); border:1px solid var(--border);
+      border-radius:var(--radius); padding:16px 20px; box-shadow:var(--shadow-sm);
+    }
+    .pay-card-badge {
+      display:inline-flex; align-items:center; padding:3px 12px;
+      border-radius:20px; font-size:12px; font-weight:700;
+      margin-bottom:10px;
+    }
+    .badge-cash   { background:#dcfce7; color:#15803d; }
+    .badge-online { background:#fef9c3; color:#854d0e; }
+    .badge-bank   { background:#ede9fe; color:#6d28d9; }
+    .pay-card-amount { font-size:22px; font-weight:700; color:var(--text); letter-spacing:-.5px; }
+
+    /* Toolbar */
+    .toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; flex-wrap:wrap; }
+    .toolbar-left { display:flex; align-items:center; gap:10px; flex:1; flex-wrap:wrap; }
+
+    .prop-selector { display:flex; align-items:center; gap:6px; padding:7px 14px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:13px; font-weight:500; color:var(--text); background:var(--white); cursor:pointer; font-family:inherit; }
+    .prop-selector svg { width:13px; height:13px; color:var(--text-muted); }
+
+    /* invoice link in table */
+    .inv-link { color:var(--primary); font-size:12.5px; font-weight:600; font-family:'DM Mono',monospace; cursor:pointer; }
+    .inv-link:hover { text-decoration:underline; }
+
+    /* method badge */
+    .meth { display:inline-flex; align-items:center; padding:3px 10px; border-radius:20px; font-size:11.5px; font-weight:600; }
+    .meth-cash   { background:#dcfce7; color:#15803d; }
+    .meth-online { background:#fef9c3; color:#854d0e; }
+    .meth-bank   { background:#ede9fe; color:#6d28d9; }
+
+    .amount-col { font-weight:600; color:var(--text); text-align:right; }
+    .muted-col  { color:var(--text-muted); }
+
+    /* Table footer */
+    .table-footer { display:flex; align-items:center; justify-content:space-between; padding:12px 20px; border-top:1px solid var(--border); font-size:12.5px; color:var(--text-muted); }
+    .pg-btns { display:flex; gap:4px; }
+    .pg-btn  { width:28px; height:28px; border:1px solid var(--border); border-radius:6px; background:var(--white); cursor:pointer; font-size:12px; font-family:inherit; color:var(--text-muted); display:flex; align-items:center; justify-content:center; }
+    .pg-btn:hover  { background:var(--bg); }
+    .pg-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); font-weight:700; }
+
+    @media (max-width:640px) {
+      .pay-summary { grid-template-columns:1fr; }
+      .toolbar { flex-direction:column; align-items:stretch; }
+    }
+    @media (max-width:480px) {
+      thead th:nth-child(4),
+      tbody td:nth-child(4),
+      thead th:nth-child(5),
+      tbody td:nth-child(5) { display:none; }
+    }
+  </style>
+</head>
+<body class="layout-app">
+
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <span class="brand-name">Royal Brangsa</span>
+  </div>
+  <div class="sidebar-section-label">Operations</div>
+  <a href="index.html"    class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+  <a href="front-desk.html"   class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Front Desk</a>
+  <a href="bookings.html"     class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Bookings</a>
+  <a href="new-booking.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>New Booking</a>
+  <a href="guests.html"       class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Guests</a>
+  <a href="rooms-floors.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Rooms &amp; Floors</a>
+  <div class="sidebar-section-label">Finance</div>
+  <a href="invoices.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Invoices</a>
+  <a href="payments.html"  class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Payments</a>
+  <a href="expenses.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Expenses</a>
+  <a href="cashflow.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>Cash Flow</a>
+  <div class="sidebar-section-label">Reports</div>
+  <a href="analytics.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics &amp; Performance</a>
+  <div class="sidebar-bottom">
+    <a href="staff-management.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Staff Management</a>
+    <a href="business-settings.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/></svg>Business Settings</a>
+    <div class="user-card">
+      <div class="user-avatar">K</div>
+      <div class="user-info"><div class="user-name">Kacho Karman</div><div class="user-role">Manager</div></div>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" onclick="toggleSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <span class="topbar-title">Payments</span>
+    </div>
+    <div class="topbar-right">
+      <div class="prop-selector">
+        All Properties
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="page-header">
+      <h1>Payments</h1>
+      <div class="page-meta">14 transactions · Total received: <strong>Rs 62,600</strong></div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="pay-summary">
+      <div class="pay-card">
+        <div class="pay-card-badge badge-cash">Cash</div>
+        <div class="pay-card-amount">Rs 38,900</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">10 transactions</div>
+      </div>
+      <div class="pay-card">
+        <div class="pay-card-badge badge-online">Online</div>
+        <div class="pay-card-amount">Rs 18,200</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">3 transactions</div>
+      </div>
+      <div class="pay-card">
+        <div class="pay-card-badge badge-bank">Bank Transfer</div>
+        <div class="pay-card-amount">Rs 5,500</div>
+        <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">1 transaction</div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Invoice</th>
+              <th>Method</th>
+              <th>Reference</th>
+              <th>Notes</th>
+              <th style="text-align:right;">Amount</th>
+            </tr>
+          </thead>
+          <tbody id="payTbody"></tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span>1–14 of 14</span>
+        <div class="pg-btns">
+          <button class="pg-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <button class="pg-btn active">1</button>
+          <button class="pg-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const payments = [
+    { date:'19/03/2026', invoice:'474c8c98', method:'cash',   ref:'—', notes:'—', amount:6700 },
+    { date:'19/03/2026', invoice:'r3c96492', method:'cash',   ref:'—', notes:'—', amount:4000 },
+    { date:'15/03/2026', invoice:'73b2c203', method:'cash',   ref:'—', notes:'—', amount:5000 },
+    { date:'15/03/2026', invoice:'3de2e4a2', method:'cash',   ref:'—', notes:'—', amount:2000 },
+    { date:'13/03/2026', invoice:'fa714689', method:'online', ref:'—', notes:'—', amount:7000 },
+    { date:'13/03/2026', invoice:'b0db7e51', method:'online', ref:'—', notes:'—', amount:3700 },
+    { date:'13/03/2026', invoice:'3ef4201f', method:'cash',   ref:'—', notes:'—', amount:5000 },
+    { date:'13/03/2026', invoice:'b015dee8', method:'cash',   ref:'—', notes:'—', amount:2500 },
+    { date:'12/03/2026', invoice:'c1234abc', method:'bank',   ref:'TRF-001', notes:'—', amount:5500 },
+    { date:'11/03/2026', invoice:'d5678bcd', method:'online', ref:'—', notes:'—', amount:7500 },
+    { date:'10/03/2026', invoice:'e9012cde', method:'cash',   ref:'—', notes:'—', amount:3000 },
+    { date:'09/03/2026', invoice:'f3456def', method:'cash',   ref:'—', notes:'—', amount:4200 },
+    { date:'08/03/2026', invoice:'a7890efa', method:'cash',   ref:'—', notes:'—', amount:3800 },
+    { date:'07/03/2026', invoice:'b2345fab', method:'cash',   ref:'—', notes:'—', amount:3400 },
+  ];
+
+  const methCls = { cash:'meth-cash', online:'meth-online', bank:'meth-bank' };
+  const methLbl = { cash:'Cash', online:'Online', bank:'Bank Transfer' };
+
+  document.getElementById('payTbody').innerHTML = payments.map(p => `
+    <tr>
+      <td>${p.date}</td>
+      <td><span class="inv-link">${p.invoice}</span></td>
+      <td><span class="meth ${methCls[p.method]}">${methLbl[p.method]}</span></td>
+      <td class="muted-col">${p.ref}</td>
+      <td class="muted-col">${p.notes}</td>
+      <td class="amount-col">Rs ${p.amount.toLocaleString()}</td>
+    </tr>`).join('');
+
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('open');
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('open');
+  }
+</script>
+</body>
+</html>

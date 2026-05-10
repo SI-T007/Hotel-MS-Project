@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Guests — Hotel Management System</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .page-meta { font-size:13px; color:var(--text-muted); margin-top:2px; }
+
+    .toolbar {
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px; margin-bottom:16px; flex-wrap:wrap;
+    }
+    .toolbar-left { display:flex; align-items:center; gap:10px; flex:1; flex-wrap:wrap; }
+
+    .search-wrap { position:relative; flex:1; min-width:180px; max-width:260px; }
+    .search-wrap svg { position:absolute; left:10px; top:50%; transform:translateY(-50%); width:15px; height:15px; color:var(--text-muted); pointer-events:none; }
+    .search-input { width:100%; padding:8px 12px 8px 32px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:13px; font-family:'DM Sans',sans-serif; color:var(--text); background:var(--white); outline:none; }
+    .search-input:focus { border-color:var(--primary); }
+    .search-input::placeholder { color:var(--text-light); }
+
+    /* guest avatar in table */
+    .g-avatar {
+      width:32px; height:32px; border-radius:50%;
+      background:var(--primary-light); color:var(--primary);
+      display:inline-flex; align-items:center; justify-content:center;
+      font-size:13px; font-weight:700; flex-shrink:0;
+    }
+    .g-cell { display:flex; align-items:center; gap:10px; }
+    .g-name  { font-weight:600; color:var(--text); font-size:13.5px; }
+    .g-email { font-size:12px; color:var(--text-muted); }
+
+    .action-link { color:var(--primary); font-size:13px; font-weight:600; cursor:pointer; margin-right:8px; }
+    .action-link:hover { text-decoration:underline; }
+
+    .table-footer {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:12px 20px; border-top:1px solid var(--border);
+      font-size:12.5px; color:var(--text-muted);
+    }
+    .pg-btns { display:flex; gap:4px; }
+    .pg-btn  { width:28px; height:28px; border:1px solid var(--border); border-radius:6px; background:var(--white); cursor:pointer; font-size:12px; font-family:inherit; color:var(--text-muted); display:flex; align-items:center; justify-content:center; }
+    .pg-btn:hover  { background:var(--bg); }
+    .pg-btn.active { background:var(--primary); color:#fff; border-color:var(--primary); font-weight:700; }
+
+    /* ── Add Guest Modal ── */
+    .modal-guest { max-width:500px; }
+    .upload-photo-btn {
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      width:68px; height:68px; border-radius:50%;
+      border:2px dashed var(--border); background:var(--bg);
+      cursor:pointer; gap:4px; flex-shrink:0; transition:border-color .18s;
+    }
+    .upload-photo-btn:hover { border-color:var(--primary); }
+    .upload-photo-btn svg   { width:20px; height:20px; color:var(--text-muted); }
+    .upload-photo-btn span  { font-size:9px; color:var(--text-muted); text-align:center; line-height:1.2; }
+    .photo-row { display:flex; align-items:flex-start; gap:16px; margin-bottom:16px; }
+
+    @media (max-width:640px) {
+      .toolbar { flex-direction:column; align-items:stretch; }
+      .search-wrap { max-width:100%; }
+    }
+  </style>
+</head>
+<body class="layout-app">
+
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <span class="brand-name">Royal Brangsa</span>
+  </div>
+  <div class="sidebar-section-label">Operations</div>
+  <a href="index.html"    class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+  <a href="front-desk.html"   class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Front Desk</a>
+  <a href="bookings.html"     class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Bookings</a>
+  <a href="new-booking.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>New Booking</a>
+  <a href="guests.html"       class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Guests</a>
+  <a href="rooms-floors.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Rooms &amp; Floors</a>
+  <div class="sidebar-section-label">Finance</div>
+  <a href="invoices.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Invoices</a>
+  <a href="payments.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Payments</a>
+  <a href="expenses.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Expenses</a>
+  <a href="cashflow.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>Cash Flow</a>
+  <div class="sidebar-section-label">Reports</div>
+  <a href="analytics.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics &amp; Performance</a>
+  <div class="sidebar-bottom">
+    <a href="staff-management.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Staff Management</a>
+    <a href="business-settings.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/></svg>Business Settings</a>
+    <div class="user-card">
+      <div class="user-avatar">K</div>
+      <div class="user-info"><div class="user-name">Kacho Karman</div><div class="user-role">Manager</div></div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" onclick="toggleSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <span class="topbar-title">Guests</span>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-primary" onclick="openGuestModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Add Guest
+      </button>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="page-header">
+      <h1>Guests</h1>
+      <div class="page-meta" id="guestCount">10 guests</div>
+    </div>
+
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="search-input" type="text" placeholder="Search guests..." oninput="searchGuests(this.value)"/>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Guest</th>
+              <th>Phone</th>
+              <th>Nationality</th>
+              <th>Bookings</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="guestsTbody"></tbody>
+        </table>
+      </div>
+      <div class="table-footer">
+        <span id="pgInfo">1–10 of 10</span>
+        <div class="pg-btns">
+          <button class="pg-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <button class="pg-btn active">1</button>
+          <button class="pg-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── MODAL: Add Guest ── -->
+<div class="modal-overlay" id="guestModal" onclick="closeOutside(event)">
+  <div class="modal modal-guest">
+    <div class="modal-header">
+      <div class="modal-title">Add Guest</div>
+      <button class="modal-close" onclick="closeGuestModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="photo-row">
+        <div class="upload-photo-btn" onclick="document.getElementById('photoInput').click()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          <span>Upload<br/>Photo</span>
+          <input type="file" id="photoInput" accept="image/*" style="display:none"/>
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:11px;color:var(--text-muted);margin-bottom:8px;">JPG, PNG or WebP — max 5 MB</div>
+          <div class="form-row">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">First Name *</label>
+              <input type="text" class="form-input" id="gFirstName" placeholder="First name" required/>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Last Name *</label>
+              <input type="text" class="form-input" id="gLastName" placeholder="Last name"/>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="gEmail" placeholder="guest@example.com"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <input type="tel" class="form-input" id="gPhone" placeholder="+1 555 0100"/>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Nationality</label>
+        <input type="text" class="form-input" id="gNationality" placeholder="e.g. Pakistani"/>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Identification — ID Type</label>
+        <select class="form-select" id="gIdType" onchange="toggleIdNum()">
+          <option value="">— None —</option>
+          <option>Passport</option>
+          <option>National ID</option>
+          <option>Driving License</option>
+        </select>
+      </div>
+
+      <div id="gIdNumWrap" style="display:none;" class="form-group">
+        <label class="form-label">ID Number</label>
+        <input type="text" class="form-input" id="gIdNum" placeholder="ID number"/>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Address</label>
+        <input type="text" class="form-input" id="gAddress" placeholder="Street address"/>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">City</label>
+          <input type="text" class="form-input" id="gCity" placeholder="City"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Country</label>
+          <input type="text" class="form-input" id="gCountry" placeholder="Country"/>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <textarea class="form-textarea" id="gNotes" placeholder="Optional notes..." style="min-height:60px;"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeGuestModal()">Cancel</button>
+      <button class="btn-primary" onclick="saveGuest()">Add Guest</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let guests = [
+    { name:'ashiq ali',   email:'ali@gmail.com',    phone:'03418118225', nationality:'Pakistani', bookings:3 },
+    { name:'kashif khan', email:'kashif@gmail.com', phone:'03001234567', nationality:'Pakistani', bookings:2 },
+    { name:'atif ali',    email:'atif@gmail.com',   phone:'03011234567', nationality:'Pakistani', bookings:4 },
+    { name:'Noor ali',    email:'noor@gmail.com',   phone:'03031234567', nationality:'Pakistani', bookings:1 },
+    { name:'ayeza khan',  email:'ayeza@gmail.com',  phone:'03051234567', nationality:'Pakistani', bookings:2 },
+    { name:'raja azam',   email:'raja@gmail.com',   phone:'03071234567', nationality:'Pakistani', bookings:3 },
+    { name:'danish ali',  email:'danish@gmail.com', phone:'03081234567', nationality:'Pakistani', bookings:1 },
+    { name:'Qasim Khan',  email:'qasim@gmail.com',  phone:'03091234567', nationality:'Pakistani', bookings:2 },
+    { name:'ahamd ali',   email:'ahamd@gmail.com',  phone:'03021234567', nationality:'Pakistani', bookings:1 },
+    { name:'khan ali',    email:'khan@gmail.com',   phone:'03061234567', nationality:'Pakistani', bookings:2 },
+  ];
+
+  let filtered = [...guests];
+
+  function renderTable() {
+    const tbody = document.getElementById('guestsTbody');
+    tbody.innerHTML = filtered.map(g => `
+      <tr>
+        <td>
+          <div class="g-cell">
+            <div class="g-avatar">${g.name[0].toUpperCase()}</div>
+            <div>
+              <div class="g-name">${g.name}</div>
+              <div class="g-email">${g.email}</div>
+            </div>
+          </div>
+        </td>
+        <td>${g.phone}</td>
+        <td>${g.nationality}</td>
+        <td>${g.bookings}</td>
+        <td>
+          <span class="action-link">View</span>
+          <span class="action-link">Edit</span>
+        </td>
+      </tr>`).join('');
+    document.getElementById('pgInfo').textContent = `1–${filtered.length} of ${filtered.length}`;
+    document.getElementById('guestCount').textContent = guests.length + ' guests';
+  }
+
+  function searchGuests(val) {
+    filtered = guests.filter(g =>
+      g.name.toLowerCase().includes(val.toLowerCase()) ||
+      g.email.toLowerCase().includes(val.toLowerCase()) ||
+      g.phone.includes(val)
+    );
+    renderTable();
+  }
+
+  function toggleIdNum() {
+    document.getElementById('gIdNumWrap').style.display =
+      document.getElementById('gIdType').value ? '' : 'none';
+  }
+
+  function openGuestModal() {
+    // reset
+    ['gFirstName','gLastName','gEmail','gPhone','gNationality','gIdNum','gAddress','gCity','gCountry','gNotes']
+      .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+    document.getElementById('gIdType').value = '';
+    document.getElementById('gIdNumWrap').style.display = 'none';
+    document.getElementById('guestModal').classList.add('open');
+  }
+
+  function closeGuestModal() {
+    document.getElementById('guestModal').classList.remove('open');
+  }
+
+  function closeOutside(e) {
+    if (e.target === document.getElementById('guestModal')) closeGuestModal();
+  }
+
+  function saveGuest() {
+    const first = document.getElementById('gFirstName').value.trim();
+    if (!first) { document.getElementById('gFirstName').focus(); return; }
+    const g = {
+      name:        (first + ' ' + document.getElementById('gLastName').value.trim()).trim(),
+      email:       document.getElementById('gEmail').value.trim() || 'No email',
+      phone:       document.getElementById('gPhone').value.trim() || '—',
+      nationality: document.getElementById('gNationality').value.trim() || '—',
+      bookings:    0,
+    };
+    guests.unshift(g);
+    filtered = [...guests];
+    renderTable();
+    closeGuestModal();
+  }
+
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('overlay').classList.toggle('open');
+  }
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('overlay').classList.remove('open');
+  }
+
+  renderTable();
+</script>
+</body>
+</html>

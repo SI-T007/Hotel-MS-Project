@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Rooms & Floors — Hotel Management System</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    .page-top { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-bottom:20px; }
+    .page-top h1 { font-size:22px; font-weight:700; letter-spacing:-.4px; }
+    .page-meta  { font-size:13px; color:var(--text-muted); margin-top:2px; }
+
+    .prop-selector { display:flex; align-items:center; gap:6px; padding:7px 14px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:13px; font-weight:500; color:var(--text); background:var(--white); cursor:pointer; font-family:inherit; }
+    .prop-selector svg { width:13px; height:13px; color:var(--text-muted); }
+
+    /* Tabs */
+    .tabs { display:flex; border-bottom:2px solid var(--border); margin-bottom:20px; gap:0; }
+    .tab-btn { padding:10px 20px; font-size:13.5px; font-weight:500; color:var(--text-muted); cursor:pointer; border:none; background:none; font-family:inherit; border-bottom:2px solid transparent; margin-bottom:-2px; transition:all .18s; }
+    .tab-btn:hover  { color:var(--text); }
+    .tab-btn.active { color:var(--primary); border-bottom-color:var(--primary); font-weight:700; }
+
+    /* Status chips */
+    .status-chips { display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; font-size:12.5px; }
+    .s-chip { display:inline-flex; align-items:center; gap:5px; font-weight:500; }
+    .s-chip .sd { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+
+    /* Toolbar */
+    .rf-toolbar { display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+    .rf-toolbar-left { display:flex; gap:8px; flex-wrap:wrap; flex:1; }
+
+    .mini-select { padding:7px 28px 7px 10px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:13px; font-family:inherit; color:var(--text); background:var(--white); cursor:pointer; outline:none; appearance:none; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%238b8fa8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 8px center; }
+
+    .search-sm { position:relative; min-width:160px; }
+    .search-sm svg { position:absolute; left:9px; top:50%; transform:translateY(-50%); width:14px; height:14px; color:var(--text-muted); pointer-events:none; }
+    .search-sm input { width:100%; padding:7px 10px 7px 30px; border:1px solid var(--border); border-radius:var(--radius-sm); font-size:13px; font-family:inherit; color:var(--text); background:var(--white); outline:none; }
+    .search-sm input:focus { border-color:var(--primary); }
+    .search-sm input::placeholder { color:var(--text-light); }
+
+    .rooms-count { font-size:12px; color:var(--text-muted); align-self:center; white-space:nowrap; }
+
+    /* Table actions */
+    .a-edit   { color:var(--primary); font-size:13px; font-weight:600; cursor:pointer; margin-right:10px; }
+    .a-edit:hover { text-decoration:underline; }
+    .a-del    { color:var(--red); font-size:13px; font-weight:600; cursor:pointer; }
+    .a-del:hover  { text-decoration:underline; }
+
+    .rooms-count-badge { display:inline-flex; align-items:center; justify-content:center; width:22px; height:22px; border-radius:50%; background:var(--primary-light); color:var(--primary); font-size:11.5px; font-weight:700; }
+
+    /* Status badge inline */
+    .sb { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:20px; font-size:11.5px; font-weight:600; }
+    .sb-available  { background:var(--green-light);  color:#15803d; }
+    .sb-occupied   { background:var(--blue-light);   color:var(--blue); }
+    .sb-dirty      { background:var(--orange-light); color:#b45309; }
+    .sb-cleaning   { background:#ccfbf1;             color:#0e7490; }
+    .sb-outoforder { background:var(--red-light);    color:var(--red); }
+
+    /* Status radio buttons (Add Room modal) */
+    .status-radios { display:flex; flex-wrap:wrap; gap:8px; }
+    .status-radio  { display:none; }
+    .status-radio-label {
+      display:inline-flex; align-items:center; gap:6px;
+      padding:7px 14px; border:1.5px solid var(--border);
+      border-radius:var(--radius-sm); font-size:13px; font-weight:500;
+      color:var(--text-muted); cursor:pointer; transition:all .15s;
+    }
+    .status-radio-label .dot { width:7px; height:7px; border-radius:50%; flex-shrink:0; }
+    .status-radio:checked + .status-radio-label { border-color:var(--primary); background:var(--primary-light); color:var(--primary); font-weight:600; }
+
+    /* Tab panels */
+    .tab-panel { display:none; }
+    .tab-panel.active { display:block; }
+
+    @media (max-width:640px) {
+      .rf-toolbar { flex-direction:column; align-items:stretch; }
+      .rf-toolbar-left { flex-direction:column; }
+      .search-sm { width:100%; }
+    }
+  </style>
+</head>
+<body class="layout-app">
+
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    </div>
+    <span class="brand-name">Royal Brangsa</span>
+  </div>
+  <div class="sidebar-section-label">Operations</div>
+  <a href="index.html"    class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+  <a href="front-desk.html"   class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Front Desk</a>
+  <a href="bookings.html"     class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Bookings</a>
+  <a href="new-booking.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>New Booking</a>
+  <a href="guests.html"       class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Guests</a>
+  <a href="rooms-floors.html" class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Rooms &amp; Floors</a>
+  <div class="sidebar-section-label">Finance</div>
+  <a href="invoices.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Invoices</a>
+  <a href="payments.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Payments</a>
+  <a href="expenses.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/></svg>Expenses</a>
+  <a href="cashflow.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>Cash Flow</a>
+  <div class="sidebar-section-label">Reports</div>
+  <a href="analytics.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics &amp; Performance</a>
+  <div class="sidebar-bottom">
+    <a href="staff-management.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Staff Management</a>
+    <a href="business-settings.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/></svg>Business Settings</a>
+    <div class="user-card">
+      <div class="user-avatar">K</div>
+      <div class="user-info"><div class="user-name">Kacho Karman</div><div class="user-role">Manager</div></div>
+    </div>
+  </div>
+</aside>
+
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" onclick="toggleSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <span class="topbar-title">Rooms &amp; Floors</span>
+    </div>
+    <div class="topbar-right">
+      <div class="prop-selector">
+        Skardu Main Branch
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+      </div>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="page-top">
+      <div>
+        <h1>Rooms &amp; Floors</h1>
+        <div class="page-meta" id="pageMeta">8 rooms · 5 room types</div>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('rooms',this)">Rooms (8)</button>
+      <button class="tab-btn" onclick="switchTab('types',this)">Room Types (5)</button>
+      <button class="tab-btn" onclick="switchTab('floors',this)">Floors</button>
+    </div>
+
+    <!-- ═══ TAB: ROOMS ═══ -->
+    <div class="tab-panel active" id="tab-rooms">
+      <div class="status-chips">
+        <span class="s-chip"><span class="sd" style="background:var(--green)"></span>Available 4</span>
+        <span class="s-chip"><span class="sd" style="background:var(--blue)"></span>Occupied 2</span>
+        <span class="s-chip"><span class="sd" style="background:var(--orange)"></span>Dirty 1</span>
+        <span class="s-chip"><span class="sd" style="background:var(--teal)"></span>Cleaning 1</span>
+        <span class="s-chip"><span class="sd" style="background:var(--red)"></span>Out of Order 0</span>
+      </div>
+      <div class="rf-toolbar">
+        <div class="rf-toolbar-left">
+          <div class="search-sm">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" placeholder="Search room #..." oninput="searchRooms(this.value)"/>
+          </div>
+          <select class="mini-select"><option>All Floors</option><option>Floor 1</option><option>Floor 2</option><option>Floor 3</option></select>
+          <select class="mini-select"><option>All Types</option><option>Couple Room</option><option>Dpluex room</option><option>Duble room</option><option>Family Room</option><option>Luxury Room</option></select>
+          <select class="mini-select"><option>All Statuses</option><option>Available</option><option>Occupied</option><option>Dirty</option><option>Cleaning</option><option>Out of Order</option></select>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <span class="rooms-count" id="roomsCount">8 rooms</span>
+          <button class="btn-primary" onclick="openAddRoom()">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            Add Room
+          </button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Room Number</th><th>Floor</th><th>Type</th><th>Status</th><th>Notes</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="roomsTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ TAB: ROOM TYPES ═══ -->
+    <div class="tab-panel" id="tab-types">
+      <div style="display:flex;justify-content:flex-end;margin-bottom:14px;">
+        <button class="btn-primary" onclick="openAddRoomType()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Room Type
+        </button>
+      </div>
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Name</th><th>Description</th><th>Base Rate / Night</th><th>Capacity</th><th>Rooms</th><th>Actions</th></tr>
+            </thead>
+            <tbody id="typesTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ TAB: FLOORS ═══ -->
+    <div class="tab-panel" id="tab-floors">
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Floor</th><th>Rooms</th><th>Available</th><th>Occupied</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Floor 1</strong></td><td>3</td><td><span class="sb sb-available">3</span></td><td>0</td></tr>
+              <tr><td><strong>Floor 2</strong></td><td>2</td><td><span class="sb sb-available">1</span></td><td><span class="sb sb-occupied">1</span></td></tr>
+              <tr><td><strong>Floor 3</strong></td><td>3</td><td><span class="sb sb-available">1</span></td><td><span class="sb sb-occupied">1</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ MODAL 1: Add Room ══ -->
+<div class="modal-overlay" id="addRoomModal" onclick="closeOut(event,'addRoomModal')">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header">
+      <div class="modal-title">Add Room</div>
+      <button class="modal-close" onclick="closeM('addRoomModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Room Number *</label>
+          <input type="text" class="form-input" id="rmNumber" placeholder="e.g. 101"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Floor</label>
+          <input type="number" class="form-input" id="rmFloor" placeholder="e.g. 1" min="1"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type *</label>
+        <select class="form-select" id="rmType">
+          <option>Couple Room — Rs 2,500/night</option>
+          <option>Dpluex room — Rs 2,000/night</option>
+          <option>Duble room — Rs 1,500/night</option>
+          <option>Family Room — Rs 3,000/night</option>
+          <option>Luxury Room — Rs 5,000/night</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <div class="status-radios">
+          <input type="radio" name="rmStatus" id="rs1" value="available" class="status-radio" checked/>
+          <label class="status-radio-label" for="rs1"><span class="dot" style="background:var(--green)"></span>Available</label>
+          <input type="radio" name="rmStatus" id="rs2" value="occupied" class="status-radio"/>
+          <label class="status-radio-label" for="rs2"><span class="dot" style="background:var(--blue)"></span>Occupied</label>
+          <input type="radio" name="rmStatus" id="rs3" value="dirty" class="status-radio"/>
+          <label class="status-radio-label" for="rs3"><span class="dot" style="background:var(--orange)"></span>Dirty</label>
+          <input type="radio" name="rmStatus" id="rs4" value="cleaning" class="status-radio"/>
+          <label class="status-radio-label" for="rs4"><span class="dot" style="background:var(--teal)"></span>Cleaning</label>
+          <input type="radio" name="rmStatus" id="rs5" value="outoforder" class="status-radio"/>
+          <label class="status-radio-label" for="rs5"><span class="dot" style="background:var(--red)"></span>Out of Order</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <input type="text" class="form-input" id="rmNotes" placeholder="Optional notes"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeM('addRoomModal')">Cancel</button>
+      <button class="btn-primary" onclick="saveRoom()">Add Room</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL 2: Add Room Type ══ -->
+<div class="modal-overlay" id="addTypeModal" onclick="closeOut(event,'addTypeModal')">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-header">
+      <div class="modal-title">Add Room Type</div>
+      <button class="modal-close" onclick="closeM('addTypeModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Name *</label>
+        <input type="text" class="form-input" id="rtName" placeholder="e.g. Deluxe Suite"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Description</label>
+        <input type="text" class="form-input" id="rtDesc" placeholder="optional"/>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Rate / Night (PKR) *</label>
+          <input type="number" class="form-input" id="rtRate" value="0" min="0"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Max Guests *</label>
+          <input type="number" class="form-input" id="rtGuests" value="2" min="1"/>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeM('addTypeModal')">Cancel</button>
+      <button class="btn-primary" onclick="saveRoomType()">Create Type</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL 3: Edit Room ══ -->
+<div class="modal-overlay" id="editRoomModal" onclick="closeOut(event,'editRoomModal')">
+  <div class="modal" style="max-width:440px;">
+    <div class="modal-header">
+      <div class="modal-title" id="editRoomTitle">Edit Room</div>
+      <button class="modal-close" onclick="closeM('editRoomModal')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Room Number</label>
+          <input type="text" class="form-input" id="erNumber" readonly style="background:#f0f2ff;cursor:not-allowed;"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Floor</label>
+          <input type="number" class="form-input" id="erFloor" min="1"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type</label>
+        <select class="form-select" id="erType">
+          <option>Couple Room — Rs 2,500/night</option>
+          <option>Dpluex room — Rs 2,000/night</option>
+          <option>Duble room — Rs 1,500/night</option>
+          <option>Family Room — Rs 3,000/night</option>
+          <option>Luxury Room — Rs 5,000/night</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Status</label>
+        <div class="status-radios">
+          <input type="radio" name="erStatus" id="er1" value="available"  class="status-radio"/>
+          <label class="status-radio-label" for="er1"><span class="dot" style="background:var(--green)"></span>Available</label>
+          <input type="radio" name="erStatus" id="er2" value="occupied"   class="status-radio"/>
+          <label class="status-radio-label" for="er2"><span class="dot" style="background:var(--blue)"></span>Occupied</label>
+          <input type="radio" name="erStatus" id="er3" value="dirty"      class="status-radio"/>
+          <label class="status-radio-label" for="er3"><span class="dot" style="background:var(--orange)"></span>Dirty</label>
+          <input type="radio" name="erStatus" id="er4" value="cleaning"   class="status-radio"/>
+          <label class="status-radio-label" for="er4"><span class="dot" style="background:var(--teal)"></span>Cleaning</label>
+          <input type="radio" name="erStatus" id="er5" value="outoforder" class="status-radio"/>
+          <label class="status-radio-label" for="er5"><span class="dot" style="background:var(--red)"></span>Out of Order</label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Notes</label>
+        <input type="text" class="form-input" id="erNotes" placeholder="Optional notes"/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeM('editRoomModal')">Cancel</button>
+      <button class="btn-primary" onclick="updateRoom()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let rooms = [
+    { num:'101', floor:'Floor 1', type:'Family Room',  status:'available',  notes:'—' },
+    { num:'102', floor:'Floor 1', type:'Couple Room',  status:'cleaning',   notes:'—' },
+    { num:'103', floor:'Floor 1', type:'Dpluex room',  status:'dirty',      notes:'—' },
+    { num:'201', floor:'Floor 2', type:'Luxury Room',  status:'occupied',   notes:'—' },
+    { num:'202', floor:'Floor 2', type:'Duble room',   status:'available',  notes:'—' },
+    { num:'301', floor:'Floor 3', type:'Couple Room',  status:'dirty',      notes:'—' },
+    { num:'302', floor:'Floor 3', type:'Dpluex room',  status:'occupied',   notes:'—' },
+    { num:'303', floor:'Floor 3', type:'Luxury Room',  status:'available',  notes:'—' },
+  ];
+
+  let roomTypes = [
+    { name:'Couple Room',  desc:'—', rate:2500, capacity:2, count:2 },
+    { name:'Dpluex room',  desc:'—', rate:2000, capacity:2, count:2 },
+    { name:'Duble room',   desc:'—', rate:1500, capacity:4, count:1 },
+    { name:'Family Room',  desc:'—', rate:3000, capacity:3, count:1 },
+    { name:'Luxury Room',  desc:'—', rate:5000, capacity:2, count:2 },
+  ];
+
+  const statusCls = { available:'sb-available', occupied:'sb-occupied', dirty:'sb-dirty', cleaning:'sb-cleaning', outoforder:'sb-outoforder' };
+  const statusLbl = { available:'Available', occupied:'Occupied', dirty:'Dirty', cleaning:'Cleaning', outoforder:'Out of Order' };
+
+  let editIdx = -1;
+
+  function renderRooms(list) {
+    document.getElementById('roomsTbody').innerHTML = list.map((r,i) => `
+      <tr>
+        <td><strong>${r.num}</strong></td>
+        <td>${r.floor}</td>
+        <td>${r.type}</td>
+        <td><span class="sb ${statusCls[r.status]}">${statusLbl[r.status]}</span></td>
+        <td>${r.notes}</td>
+        <td>
+          <span class="a-edit" onclick="openEditRoom(${rooms.indexOf(r)})">Edit</span>
+          <span class="a-del"  onclick="deleteRoom(${rooms.indexOf(r)})">Delete</span>
+        </td>
+      </tr>`).join('');
+    document.getElementById('roomsCount').textContent = list.length + ' rooms';
+  }
+
+  function renderTypes() {
+    document.getElementById('typesTbody').innerHTML = roomTypes.map((t,i) => `
+      <tr>
+        <td><strong>${t.name}</strong></td>
+        <td>${t.desc}</td>
+        <td>Rs ${t.rate.toLocaleString()}</td>
+        <td>${t.capacity}</td>
+        <td><span class="rooms-count-badge">${t.count}</span></td>
+        <td>
+          <span class="a-edit">Edit</span>
+          <span class="a-del" onclick="deleteType(${i})">Delete</span>
+        </td>
+      </tr>`).join('');
+  }
+
+  function searchRooms(val) {
+    renderRooms(rooms.filter(r => r.num.includes(val) || r.type.toLowerCase().includes(val.toLowerCase())));
+  }
+
+  // Tab switching
+  function switchTab(tab, el) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+  }
+
+  // Add Room
+  function openAddRoom() {
+    document.getElementById('rmNumber').value = '';
+    document.getElementById('rmFloor').value  = '';
+    document.getElementById('rmNotes').value  = '';
+    document.getElementById('rs1').checked    = true;
+    document.getElementById('addRoomModal').classList.add('open');
+  }
+
+  function saveRoom() {
+    const num = document.getElementById('rmNumber').value.trim();
+    if (!num) { document.getElementById('rmNumber').focus(); return; }
+    const status = document.querySelector('input[name="rmStatus"]:checked').value;
+    const type   = document.getElementById('rmType').value.split(' —')[0];
+    const floor  = document.getElementById('rmFloor').value || '1';
+    rooms.push({ num, floor:'Floor ' + floor, type, status, notes: document.getElementById('rmNotes').value || '—' });
+    renderRooms(rooms);
+    closeM('addRoomModal');
+  }
+
+  // Edit Room
+  function openEditRoom(idx) {
+    editIdx = idx;
+    const r = rooms[idx];
+    document.getElementById('editRoomTitle').textContent = 'Edit Room ' + r.num;
+    document.getElementById('erNumber').value = r.num;
+    document.getElementById('erFloor').value  = r.floor.replace('Floor ','');
+    document.getElementById('erNotes').value  = r.notes === '—' ? '' : r.notes;
+    document.querySelectorAll('input[name="erStatus"]').forEach(rb => { rb.checked = rb.value === r.status; });
+    document.getElementById('editRoomModal').classList.add('open');
+  }
+
+  function updateRoom() {
+    if (editIdx < 0) return;
+    const r      = rooms[editIdx];
+    r.floor      = 'Floor ' + (document.getElementById('erFloor').value || r.floor.replace('Floor ',''));
+    r.type       = document.getElementById('erType').value.split(' —')[0];
+    r.status     = document.querySelector('input[name="erStatus"]:checked').value;
+    r.notes      = document.getElementById('erNotes').value || '—';
+    renderRooms(rooms);
+    closeM('editRoomModal');
+  }
+
+  function deleteRoom(idx) {
+    if (confirm('Delete room ' + rooms[idx].num + '?')) {
+      rooms.splice(idx, 1);
+      renderRooms(rooms);
+    }
+  }
+
+  // Add Room Type
+  function openAddRoomType() {
+    ['rtName','rtDesc'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('rtRate').value   = '0';
+    document.getElementById('rtGuests').value = '2';
+    document.getElementById('addTypeModal').classList.add('open');
+  }
+
+  function saveRoomType() {
+    const name = document.getElementById('rtName').value.trim();
+    if (!name) { document.getElementById('rtName').focus(); return; }
+    roomTypes.push({ name, desc: document.getElementById('rtDesc').value || '—', rate: +document.getElementById('rtRate').value, capacity: +document.getElementById('rtGuests').value, count: 0 });
+    renderTypes();
+    closeM('addTypeModal');
+  }
+
+  function deleteType(idx) {
+    if (confirm('Delete type ' + roomTypes[idx].name + '?')) {
+      roomTypes.splice(idx, 1);
+      renderTypes();
+    }
+  }
+
+  // Modal helpers
+  function closeM(id)           { document.getElementById(id).classList.remove('open'); }
+  function closeOut(e, id)      { if (e.target === document.getElementById(id)) closeM(id); }
+
+  // Sidebar
+  function toggleSidebar() { document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('open'); }
+  function closeSidebar()  { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
+
+  renderRooms(rooms);
+  renderTypes();
+</script>
+</body>
+</html>
