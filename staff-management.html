@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Staff Management — Hotel Management System</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    /* ── Tabs ── */
+    .sm-tabs {
+      display: flex;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 20px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      gap: 0;
+    }
+    .sm-tab {
+      padding: 10px 20px;
+      font-size: 13.5px; font-weight: 500;
+      color: var(--text-muted); cursor: pointer;
+      border: none; background: none; font-family: inherit;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px; white-space: nowrap;
+      transition: all .15s;
+    }
+    .sm-tab:hover  { color: var(--text); }
+    .sm-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 700; }
+
+    /* ── Toolbar ── */
+    .sm-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+    .search-wrap {
+      position: relative;
+      flex: 1;
+      min-width: 160px;
+      max-width: 260px;
+    }
+    .search-wrap svg {
+      position: absolute; left: 10px; top: 50%;
+      transform: translateY(-50%);
+      width: 15px; height: 15px;
+      color: var(--text-muted); pointer-events: none;
+    }
+    .search-input {
+      width: 100%;
+      padding: 8px 12px 8px 32px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px; font-family: inherit;
+      color: var(--text); background: var(--white); outline: none;
+    }
+    .search-input:focus { border-color: var(--primary); }
+    .search-input::placeholder { color: var(--text-light); }
+
+    .mini-sel {
+      padding: 7px 28px 7px 10px;
+      border: 1px solid var(--border); border-radius: var(--radius-sm);
+      font-size: 13px; font-family: inherit;
+      color: var(--text); background: var(--white); cursor: pointer; outline: none;
+      appearance: none; -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='11' height='11' viewBox='0 0 24 24' fill='none' stroke='%238b8fa8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 8px center;
+      white-space: nowrap;
+    }
+
+    /* ── Staff avatar ── */
+    .staff-avatar {
+      width: 34px; height: 34px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .staff-cell {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .staff-name  { font-weight: 600; font-size: 13.5px; color: var(--text); }
+    .staff-email { font-size: 12px; color: var(--text-muted); }
+    .you-badge   {
+      display: inline-block; padding: 1px 7px;
+      background: var(--primary-light); color: var(--primary);
+      font-size: 10.5px; font-weight: 700; border-radius: 10px; margin-left: 6px;
+    }
+
+    /* Role badge */
+    .role-badge {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: 12px; font-weight: 600;
+    }
+    .rb-fd  { background: var(--blue-light);  color: var(--blue); }
+    .rb-mgr { background: var(--green-light); color: #15803d; }
+    .rb-adm { background: #ede9fe;            color: var(--purple); }
+
+    /* Status */
+    .status-active   { color: #15803d; font-size: 13px; font-weight: 600; }
+    .status-inactive { color: var(--text-muted); font-size: 13px; }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      display: inline-block; margin-right: 5px;
+    }
+
+    .a-lnk { color: var(--primary); font-size: 13px; font-weight: 600; cursor: pointer; }
+    .a-lnk:hover { text-decoration: underline; }
+
+    /* pagination */
+    .tf { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; border-top: 1px solid var(--border); font-size: 12.5px; color: var(--text-muted); }
+    .pgb { display: flex; gap: 4px; }
+    .pb  { width: 28px; height: 28px; border: 1px solid var(--border); border-radius: 6px; background: var(--white); cursor: pointer; font-size: 12px; font-family: inherit; color: var(--text-muted); display: flex; align-items: center; justify-content: center; }
+    .pb:hover  { background: var(--bg); }
+    .pb.active { background: var(--primary); color: #fff; border-color: var(--primary); font-weight: 700; }
+
+    /* Tab panels */
+    .tab-panel         { display: none; }
+    .tab-panel.active  { display: block; }
+
+    /* Invitation Created modal */
+    .inv-created-box {
+      background: #f0fdf4; border: 1px solid #bbf7d0;
+      border-radius: var(--radius-sm); padding: 14px; margin-bottom: 16px;
+    }
+    .inv-created-email { font-size: 13.5px; font-weight: 700; color: #15803d; margin-bottom: 2px; }
+    .inv-created-sub   { font-size: 12px; color: var(--text-muted); }
+    .inv-link-row {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: var(--radius-sm); padding: 8px 12px; margin-top: 10px;
+    }
+    .inv-link-text { font-size: 12px; color: var(--text-muted); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .btn-copy {
+      padding: 5px 14px; background: var(--primary); color: #fff;
+      border: none; border-radius: 6px; font-size: 12px;
+      font-weight: 600; cursor: pointer; font-family: inherit; white-space: nowrap;
+    }
+    .btn-copy:hover { opacity: .9; }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .sm-toolbar { flex-wrap: wrap; }
+      .search-wrap { max-width: 100%; flex: 1 1 100%; }
+    }
+    @media (max-width: 640px) {
+      thead th:nth-child(4),
+      tbody td:nth-child(4),
+      thead th:nth-child(5),
+      tbody td:nth-child(5) { display: none; }
+    }
+    @media (max-width: 480px) {
+      thead th:nth-child(3),
+      tbody td:nth-child(3) { display: none; }
+      .sm-toolbar { gap: 8px; }
+    }
+  </style>
+</head>
+<body class="layout-app">
+
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+    <span class="brand-name">Royal Brangsa</span>
+  </div>
+  <div class="sidebar-section-label">Operations</div>
+  <a href="index.html"    class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+  <a href="front-desk.html"   class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Front Desk</a>
+  <a href="bookings.html"     class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Bookings</a>
+  <a href="new-booking.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>New Booking</a>
+  <a href="guests.html"       class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Guests</a>
+  <a href="rooms-floors.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Rooms &amp; Floors</a>
+  <div class="sidebar-section-label">Finance</div>
+  <a href="invoices.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Invoices</a>
+  <a href="payments.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Payments</a>
+  <a href="expenses.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Expenses</a>
+  <a href="cashflow.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>Cash Flow</a>
+  <div class="sidebar-section-label">Reports</div>
+  <a href="analytics.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics &amp; Performance</a>
+  <div class="sidebar-section-label">Management</div>
+  <a href="staff-management.html"  class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>Staff Management</a>
+  <a href="business-settings.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>Business Settings</a>
+  <div class="sidebar-bottom">
+    <div class="user-card">
+      <div class="user-avatar">K</div>
+      <div class="user-info"><div class="user-name">Kacho Karman</div><div class="user-role">Manager</div></div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" onclick="toggleSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <span class="topbar-title">Staff Management</span>
+    </div>
+    <div class="topbar-right">
+      <button class="btn-primary" onclick="openInviteModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Invite Staff
+      </button>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="page-header">
+      <h1>Staff Management</h1>
+      <div style="font-size:13px;color:var(--text-muted);margin-top:2px;" id="memberCount">3 members</div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="sm-tabs">
+      <button class="sm-tab active" onclick="switchTab('members',this)">Staff Members</button>
+      <button class="sm-tab" onclick="switchTab('invitations',this)">Invitations</button>
+      <button class="sm-tab" onclick="switchTab('roles',this)">Roles &amp; Permissions</button>
+      <button class="sm-tab" onclick="switchTab('audit',this)">Audit Log</button>
+    </div>
+
+    <!-- ── TAB: Staff Members ── -->
+    <div class="tab-panel active" id="tab-members">
+      <div class="sm-toolbar">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input class="search-input" type="text" placeholder="Search staff members..." oninput="searchStaff(this.value)"/>
+        </div>
+        <select class="mini-sel" onchange="filterStaff()">
+          <option>All Roles</option>
+          <option>FrontDesk</option>
+          <option>Manager</option>
+          <option>Admin</option>
+        </select>
+        <select class="mini-sel" onchange="filterStaff()">
+          <option>All</option>
+          <option>Active</option>
+          <option>Inactive</option>
+        </select>
+        <select class="mini-sel">
+          <option>All Properties</option>
+          <option>Skardu Main Branch</option>
+          <option>Shigar branch</option>
+        </select>
+      </div>
+
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Staff Email</th>
+                <th>Role</th>
+                <th>Property</th>
+                <th>Status</th>
+                <th>Last Login</th>
+                <th>Joined</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="staffTbody"></tbody>
+          </table>
+        </div>
+        <div class="tf">
+          <span id="staffInfo">1–3 of 3</span>
+          <div class="pgb">
+            <button class="pb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="15 18 9 12 15 6"/></svg></button>
+            <button class="pb active">1</button>
+            <button class="pb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12"><polyline points="9 18 15 12 9 6"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: Invitations ── -->
+    <div class="tab-panel" id="tab-invitations">
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Email</th><th>Role</th><th>Sent</th><th>Expires</th><th>Status</th></tr></thead>
+            <tbody id="invTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: Roles & Permissions ── -->
+    <div class="tab-panel" id="tab-roles">
+      <div class="card">
+        <div class="card-body">
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            <div style="background:var(--bg);border-radius:var(--radius-sm);padding:16px;">
+              <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;">Manager</div>
+              <div style="font-size:13px;color:var(--text-muted);">Full access — all properties, all features including staff management, billing, and settings.</div>
+            </div>
+            <div style="background:var(--bg);border-radius:var(--radius-sm);padding:16px;">
+              <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;">FrontDesk</div>
+              <div style="font-size:13px;color:var(--text-muted);">Reservations, check-in/out, guest management, front desk view. No access to finance or settings.</div>
+            </div>
+            <div style="background:var(--bg);border-radius:var(--radius-sm);padding:16px;">
+              <div style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;">Admin</div>
+              <div style="font-size:13px;color:var(--text-muted);">Full access like Manager but cannot invite or remove staff.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: Audit Log ── -->
+    <div class="tab-panel" id="tab-audit">
+      <div class="card">
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Date / Time</th><th>User</th><th>Action</th><th>Details</th></tr></thead>
+            <tbody>
+              <tr><td>19/03/2026 10:12 PM</td><td>Kacho Karman</td><td>Invited staff</td><td>Sent invite to raja@gmail.com (FrontDesk)</td></tr>
+              <tr><td>17/03/2026 07:28 PM</td><td>Kacho Karman</td><td>Logged in</td><td>Login from 192.168.1.1</td></tr>
+              <tr><td>15/03/2026 01:08 PM</td><td>Asif</td><td>Account created</td><td>Joined via invitation link</td></tr>
+              <tr><td>13/03/2026 04:13 PM</td><td>Ali</td><td>Account created</td><td>Joined via invitation link</td></tr>
+              <tr><td>13/03/2026 03:00 PM</td><td>Kacho Karman</td><td>Account created</td><td>Initial setup</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ MODAL 1: Invite Staff Member ══ -->
+<div class="modal-overlay" id="inviteModal" onclick="closeOut(event,'inviteModal')">
+  <div class="modal" style="max-width:460px;">
+    <div class="modal-header">
+      <div class="modal-title">Invite Staff Member</div>
+      <button class="modal-close" onclick="closeM('inviteModal')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Email Address *</label>
+        <input type="email" class="form-input" id="invEmail" placeholder="staff@hotel.com"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Role *</label>
+        <select class="form-select" id="invRole">
+          <option>Front Desk</option>
+          <option>Manager</option>
+          <option>Admin</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Assign Properties</label>
+        <select class="form-select" id="invProp">
+          <option>All Properties</option>
+          <option>Skardu Main Branch</option>
+          <option>Shigar branch</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Personal Message (Optional)</label>
+        <textarea class="form-textarea" id="invMsg" style="min-height:80px;">Hi Jane, we'd like to invite you to join our hotel management team on Roomosys. Please click the link below to get started.</textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeM('inviteModal')">Cancel</button>
+      <button class="btn-primary" onclick="sendInvitation()">Send Invitation</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MODAL 2: Invitation Created ══ -->
+<div class="modal-overlay" id="invCreatedModal" onclick="closeOut(event,'invCreatedModal')">
+  <div class="modal" style="max-width:400px;">
+    <div class="modal-header">
+      <div class="modal-title">Invitation Created</div>
+      <button class="modal-close" onclick="closeM('invCreatedModal')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="inv-created-box">
+        <div class="inv-created-email" id="createdEmail">raja@gmail.com</div>
+        <div class="inv-created-sub">The invitation link will expire in 72 hours.</div>
+        <div class="inv-link-row">
+          <span class="inv-link-text" id="invLink">https://roomosys.com/accept-invitation?token=gkPa3C...</span>
+          <button class="btn-copy" onclick="copyLink()" id="copyBtn">Copy</button>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-primary" onclick="closeM('invCreatedModal')">Done</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const staff = [
+    { name:'Asif',         email:'asif@gmail.com',  role:'FrontDesk', prop:'Shigar branch',      status:'active', lastLogin:'Never Logged in', joined:'15/03/2026 1:08 PM', color:'#4f6ef7' },
+    { name:'Ali',          email:'ali@gmail.com',   role:'FrontDesk', prop:'Skardu Main Branch', status:'active', lastLogin:'Never Logged in', joined:'13/03/2026 4:13 PM', color:'#4f6ef7' },
+    { name:'Kacho Karman', email:'kacho@gmail.com', role:'Manager',   prop:'All Properties',     status:'active', lastLogin:'17/03/2026 7:28 PM', joined:'13/03/2026 3:00 PM', color:'#8b5cf6', isYou:true },
+  ];
+
+  const invitations = [];
+
+  const roleCls = { FrontDesk:'rb-fd', Manager:'rb-mgr', Admin:'rb-adm' };
+
+  function renderStaff(list) {
+    document.getElementById('staffTbody').innerHTML = list.map(s => `
+      <tr>
+        <td>
+          <div class="staff-cell">
+            <div class="staff-avatar" style="background:${s.color};">${s.name[0]}</div>
+            <div>
+              <div class="staff-name">${s.name}${s.isYou ? '<span class="you-badge">staff you</span>' : ''}</div>
+              <div class="staff-email">${s.email}</div>
+            </div>
+          </div>
+        </td>
+        <td><span class="role-badge ${roleCls[s.role]||'rb-fd'}">${s.role}</span></td>
+        <td>${s.prop}</td>
+        <td>
+          <span class="status-dot" style="background:${s.status==='active'?'#22c55e':'#94a3b8'};"></span>
+          <span class="${s.status==='active'?'status-active':'status-inactive'}">${s.status==='active'?'Active':'Inactive'}</span>
+        </td>
+        <td style="font-size:12.5px;color:var(--text-muted);">${s.lastLogin}</td>
+        <td style="font-size:12.5px;color:var(--text-muted);">${s.joined}</td>
+        <td>${s.isYou ? '' : '<span class="a-lnk">Manage</span>'}</td>
+      </tr>`).join('');
+    document.getElementById('staffInfo').textContent = `1–${list.length} of ${list.length}`;
+    document.getElementById('memberCount').textContent = staff.length + ' members';
+  }
+
+  function renderInvitations() {
+    const tb = document.getElementById('invTbody');
+    if (!invitations.length) {
+      tb.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:32px;color:var(--text-muted);">No pending invitations.</td></tr>`;
+      return;
+    }
+    tb.innerHTML = invitations.map(inv => `
+      <tr>
+        <td>${inv.email}</td>
+        <td><span class="role-badge ${roleCls[inv.role]||'rb-fd'}">${inv.role}</span></td>
+        <td style="font-size:12.5px;color:var(--text-muted);">${inv.sent}</td>
+        <td style="font-size:12.5px;color:var(--text-muted);">${inv.expires}</td>
+        <td><span class="badge badge-pending">Pending</span></td>
+      </tr>`).join('');
+  }
+
+  function searchStaff(val) {
+    const v = val.toLowerCase();
+    renderStaff(staff.filter(s => s.name.toLowerCase().includes(v) || s.email.toLowerCase().includes(v)));
+  }
+
+  function filterStaff() { renderStaff(staff); }
+
+  function switchTab(tab, el) {
+    document.querySelectorAll('.sm-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+  }
+
+  function openInviteModal() {
+    document.getElementById('invEmail').value = '';
+    document.getElementById('invRole').value  = 'Front Desk';
+    document.getElementById('inviteModal').classList.add('open');
+  }
+
+  function sendInvitation() {
+    const email = document.getElementById('invEmail').value.trim();
+    if (!email) { document.getElementById('invEmail').focus(); return; }
+    const role  = document.getElementById('invRole').value;
+    const now   = new Date();
+    const exp   = new Date(now); exp.setHours(exp.getHours() + 72);
+    const fmt   = d => d.toLocaleDateString('en-GB') + ' ' + d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+
+    invitations.unshift({ email, role, sent: fmt(now), expires: fmt(exp) });
+    renderInvitations();
+
+    document.getElementById('createdEmail').textContent = email;
+    document.getElementById('invLink').textContent = 'https://roomosys.com/accept-invitation?token=' + Math.random().toString(36).slice(2,10);
+    document.getElementById('copyBtn').textContent = 'Copy';
+
+    closeM('inviteModal');
+    document.getElementById('invCreatedModal').classList.add('open');
+  }
+
+  function copyLink() {
+    const link = document.getElementById('invLink').textContent;
+    navigator.clipboard?.writeText(link).catch(()=>{});
+    const btn = document.getElementById('copyBtn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  }
+
+  function closeM(id)    { document.getElementById(id).classList.remove('open'); }
+  function closeOut(e,id){ if(e.target===document.getElementById(id)) closeM(id); }
+  function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('open'); }
+  function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
+
+  renderStaff(staff);
+  renderInvitations();
+</script>
+</body>
+</html>
