@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Business Settings — Hotel Management System</title>
+  <link rel="stylesheet" href="style.css"/>
+  <style>
+    /* ── Tabs ── */
+    .bs-tabs {
+      display: flex;
+      border-bottom: 2px solid var(--border);
+      margin-bottom: 24px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .bs-tabs::-webkit-scrollbar { display: none; }
+
+    .bs-tab {
+      padding: 10px 22px;
+      font-size: 13.5px; font-weight: 500;
+      color: var(--text-muted); cursor: pointer;
+      border: none; background: none; font-family: inherit;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px; white-space: nowrap;
+      transition: all .15s; flex-shrink: 0;
+    }
+    .bs-tab:hover  { color: var(--text); }
+    .bs-tab.active { color: var(--primary); border-bottom-color: var(--primary); font-weight: 700; }
+
+    /* Tab panels */
+    .tab-panel        { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ── Settings sections ── */
+    .settings-section {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .settings-section-title {
+      font-size: 13.5px; font-weight: 700;
+      color: var(--text);
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      background: var(--white);
+    }
+
+    /* ── Setting rows ── */
+    .setting-row {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      align-items: start;
+      gap: 20px;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .setting-row:last-child { border-bottom: none; }
+
+    .setting-label {
+      font-size: 13.5px; color: var(--text);
+      padding-top: 10px; font-weight: 500;
+    }
+    .setting-control { flex: 1; }
+
+    /* Logo upload */
+    .logo-upload {
+      display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    }
+    .logo-preview {
+      width: 52px; height: 52px; border-radius: 10px;
+      background: var(--bg); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      overflow: hidden; flex-shrink: 0;
+    }
+    .logo-preview svg { width: 28px; height: 28px; color: var(--text-muted); }
+    .btn-replace {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border: 1px solid var(--border);
+      border-radius: var(--radius-sm); background: var(--white);
+      font-size: 13px; font-weight: 600; color: var(--text);
+      cursor: pointer; font-family: inherit;
+    }
+    .btn-replace:hover { background: var(--bg); }
+    .btn-replace svg { width: 14px; height: 14px; }
+    .logo-hint { font-size: 11.5px; color: var(--text-muted); margin-top: 4px; }
+
+    /* Save bar */
+    .save-bar {
+      display: flex; justify-content: flex-end;
+      padding: 16px 20px 0;
+    }
+
+    /* ── Properties tab ── */
+    .prop-header {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap; gap: 12px;
+      margin-bottom: 16px;
+    }
+    .prop-header p { font-size: 13px; color: var(--text-muted); }
+    .prop-count    { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+    .prop-item {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 10px;
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .prop-item-header {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 14px 20px; cursor: pointer;
+      user-select: none;
+    }
+    .prop-item-header:hover { background: var(--bg); }
+    .prop-name { font-size: 14px; font-weight: 600; color: var(--text); }
+    .expand-btn {
+      display: flex; align-items: center; gap: 5px;
+      font-size: 12.5px; font-weight: 600; color: var(--primary);
+      cursor: pointer; border: none; background: none;
+      font-family: inherit;
+    }
+    .expand-btn svg { width: 13px; height: 13px; transition: transform .2s; }
+    .expand-btn.open svg { transform: rotate(180deg); }
+
+    .prop-body {
+      display: none;
+      padding: 16px 20px;
+      border-top: 1px solid var(--border);
+      background: var(--bg);
+    }
+    .prop-body.open { display: block; }
+
+    .prop-fields {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 12px;
+    }
+
+    /* ── Modal: Add Property ── */
+    .modal-prop { max-width: 460px; }
+
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      .setting-row {
+        grid-template-columns: 1fr;
+        gap: 6px;
+      }
+      .setting-label { padding-top: 0; }
+      .prop-fields { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 480px) {
+      .bs-tab { padding: 10px 14px; font-size: 13px; }
+      .prop-header { flex-direction: column; align-items: stretch; }
+    }
+  </style>
+</head>
+<body class="layout-app">
+
+<div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-brand">
+    <div class="brand-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+    <span class="brand-name">Royal Brangsa</span>
+  </div>
+  <div class="sidebar-section-label">Operations</div>
+  <a href="index.html"    class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>Dashboard</a>
+  <a href="front-desk.html"   class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>Front Desk</a>
+  <a href="bookings.html"     class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>Bookings</a>
+  <a href="new-booking.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>New Booking</a>
+  <a href="guests.html"       class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Guests</a>
+  <a href="rooms-floors.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Rooms &amp; Floors</a>
+  <div class="sidebar-section-label">Finance</div>
+  <a href="invoices.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Invoices</a>
+  <a href="payments.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>Payments</a>
+  <a href="expenses.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Expenses</a>
+  <a href="cashflow.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>Cash Flow</a>
+  <div class="sidebar-section-label">Reports</div>
+  <a href="analytics.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Analytics &amp; Performance</a>
+  <div class="sidebar-section-label">Management</div>
+  <a href="staff-management.html"  class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>Staff Management</a>
+  <a href="business-settings.html" class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>Business Settings</a>
+  <div class="sidebar-bottom">
+    <div class="user-card">
+      <div class="user-avatar">K</div>
+      <div class="user-info"><div class="user-name">Kacho Karman</div><div class="user-role">Manager</div></div>
+    </div>
+  </div>
+</aside>
+
+<!-- MAIN -->
+<div class="main">
+  <header class="topbar">
+    <div class="topbar-left">
+      <button class="hamburger" onclick="toggleSidebar()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+      </button>
+      <span class="topbar-title">Business Settings</span>
+    </div>
+  </header>
+
+  <div class="content">
+    <div class="page-header">
+      <h1>Business Settings</h1>
+    </div>
+
+    <!-- Tabs -->
+    <div class="bs-tabs">
+      <button class="bs-tab active" onclick="switchTab('profile',this)">Business Profile</button>
+      <button class="bs-tab" onclick="switchTab('financial',this)">Financial &amp; Invoicing</button>
+      <button class="bs-tab" onclick="switchTab('properties',this)">Properties</button>
+    </div>
+
+    <!-- ══ TAB: Business Profile ══ -->
+    <div class="tab-panel active" id="tab-profile">
+
+      <!-- Business Identity -->
+      <div class="settings-section">
+        <div class="settings-section-title">Business Identity</div>
+
+        <div class="setting-row">
+          <div class="setting-label">Business Name</div>
+          <div class="setting-control">
+            <input type="text" class="form-input" value="Royal Brangsa"/>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Legal Name</div>
+          <div class="setting-control">
+            <input type="text" class="form-input" value="Royal Brangsa"/>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Tax / VAT ID</div>
+          <div class="setting-control">
+            <input type="text" class="form-input" placeholder="e.g. US-123456789"/>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Business Logo</div>
+          <div class="setting-control">
+            <div class="logo-upload">
+              <div class="logo-preview">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              </div>
+              <div>
+                <button class="btn-replace" onclick="document.getElementById('logoInput').click()">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                  Replace Logo
+                </button>
+                <div class="logo-hint">JPG, PNG, WebP or SVG · Max 2 MB</div>
+                <input type="file" id="logoInput" accept="image/*" style="display:none"/>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Address & Contact -->
+      <div class="settings-section">
+        <div class="settings-section-title">Address &amp; Contact</div>
+
+        <div class="setting-row">
+          <div class="setting-label">Address</div>
+          <div class="setting-control"><input type="text" class="form-input" value="Ali Abad Skardu"/></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">City</div>
+          <div class="setting-control"><input type="text" class="form-input" value="Skardu"/></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">State / Province</div>
+          <div class="setting-control"><input type="text" class="form-input" value="GB"/></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Country</div>
+          <div class="setting-control"><input type="text" class="form-input" value="Pakistan"/></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Postal Code</div>
+          <div class="setting-control"><input type="text" class="form-input" value="1400" style="max-width:200px;"/></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Phone</div>
+          <div class="setting-control"><input type="tel" class="form-input" value="+1-555-0100"/></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Email</div>
+          <div class="setting-control"><input type="email" class="form-input" value="kacho@gmail.com"/></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Website</div>
+          <div class="setting-control"><input type="url" class="form-input" placeholder="https://..."/></div>
+        </div>
+      </div>
+
+      <div class="save-bar">
+        <button class="btn-primary" onclick="showSaved()">Save Changes</button>
+      </div>
+    </div>
+
+    <!-- ══ TAB: Financial & Invoicing ══ -->
+    <div class="tab-panel" id="tab-financial">
+
+      <!-- Currency & Tax -->
+      <div class="settings-section">
+        <div class="settings-section-title">Currency &amp; Tax</div>
+        <div class="setting-row">
+          <div class="setting-label">Currency</div>
+          <div class="setting-control">
+            <select class="form-select" style="max-width:280px;">
+              <option selected>PKR</option>
+              <option>USD</option>
+              <option>EUR</option>
+              <option>GBP</option>
+            </select>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Tax Rate</div>
+          <div class="setting-control"><input type="number" class="form-input" value="0.0000" min="0" max="100" step="0.0001" style="max-width:200px;"/></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Fiscal Year Start</div>
+          <div class="setting-control">
+            <select class="form-select" style="max-width:280px;">
+              <option selected>January</option>
+              <option>February</option>
+              <option>March</option>
+              <option>April</option>
+              <option>July</option>
+              <option>October</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Invoicing -->
+      <div class="settings-section">
+        <div class="settings-section-title">Invoicing</div>
+        <div class="setting-row">
+          <div class="setting-label">Invoice Prefix</div>
+          <div class="setting-control"><input type="text" class="form-input" value="INV" style="max-width:160px;"/></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Payment Terms (days)</div>
+          <div class="setting-control"><input type="number" class="form-input" value="30" min="0" style="max-width:160px;"/></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-label">Invoice Footer</div>
+          <div class="setting-control"><textarea class="form-textarea" placeholder="Thank you for your business..." style="max-width:500px;min-height:70px;"></textarea></div>
+        </div>
+      </div>
+
+      <div class="save-bar">
+        <button class="btn-primary" onclick="showSaved()">Save Changes</button>
+      </div>
+    </div>
+
+    <!-- ══ TAB: Properties ══ -->
+    <div class="tab-panel" id="tab-properties">
+      <div class="prop-header">
+        <div>
+          <p>Configure each property's timezone, currency, check-in/out times, fees, and policies.</p>
+          <div class="prop-count" id="propCount">2 properties</div>
+        </div>
+        <button class="btn-primary" onclick="openAddPropModal()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Property
+        </button>
+      </div>
+
+      <div id="propsList"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ MODAL: Add Property ══ -->
+<div class="modal-overlay" id="addPropModal" onclick="closeOut(event,'addPropModal')">
+  <div class="modal modal-prop">
+    <div class="modal-header">
+      <div class="modal-title">Add Property</div>
+      <button class="modal-close" onclick="closeM('addPropModal')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Property Name *</label>
+        <input type="text" class="form-input" id="pName" placeholder="e.g. Beach Resort Branch"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Address</label>
+        <input type="text" class="form-input" id="pAddress" placeholder="Street address"/>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">City</label>
+          <input type="text" class="form-input" id="pCity" placeholder="City"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">State</label>
+          <input type="text" class="form-input" id="pState" placeholder="State / Province"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Country</label>
+          <input type="text" class="form-input" id="pCountry" placeholder="Country"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Postal Code</label>
+          <input type="text" class="form-input" id="pPostal" placeholder="Postal code"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Phone</label>
+          <input type="tel" class="form-input" id="pPhone" placeholder="+1 555 0100"/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Email</label>
+          <input type="email" class="form-input" id="pEmail" placeholder="property@hotel.com"/>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Website</label>
+        <input type="url" class="form-input" id="pWebsite" placeholder="https://..."/>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="closeM('addPropModal')">Cancel</button>
+      <button class="btn-primary" onclick="addProperty()">Add Property</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let properties = [
+    { name: 'Skardu Main Branch', open: false },
+    { name: 'Shigar branch',      open: false },
+  ];
+
+  function renderProperties() {
+    document.getElementById('propsList').innerHTML = properties.map((p, i) => `
+      <div class="prop-item">
+        <div class="prop-item-header" onclick="toggleProp(${i})">
+          <div class="prop-name">${p.name}</div>
+          <button class="expand-btn ${p.open ? 'open' : ''}" id="expandBtn${i}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            ${p.open ? 'Collapse' : 'Expand'}
+          </button>
+        </div>
+        <div class="prop-body ${p.open ? 'open' : ''}" id="propBody${i}">
+          <div class="prop-fields">
+            <div class="form-group">
+              <label class="form-label">Timezone</label>
+              <select class="form-select">
+                <option>Asia/Karachi (PKT +5:00)</option>
+                <option>UTC</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Currency</label>
+              <select class="form-select"><option>PKR</option><option>USD</option></select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Check-in Time</label>
+              <input type="time" class="form-input" value="14:00"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Check-out Time</label>
+              <input type="time" class="form-input" value="11:00"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Phone</label>
+              <input type="tel" class="form-input" placeholder="+1 555 0100"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Email</label>
+              <input type="email" class="form-input" placeholder="branch@hotel.com"/>
+            </div>
+          </div>
+          <div style="margin-top:14px;display:flex;justify-content:flex-end;">
+            <button class="btn-primary" onclick="showSaved()">Save</button>
+          </div>
+        </div>
+      </div>`).join('');
+    document.getElementById('propCount').textContent = properties.length + ' properties';
+  }
+
+  function toggleProp(i) {
+    properties[i].open = !properties[i].open;
+    renderProperties();
+  }
+
+  function openAddPropModal() {
+    ['pName','pAddress','pCity','pState','pCountry','pPostal','pPhone','pEmail','pWebsite']
+      .forEach(id => { const el = document.getElementById(id); if(el) el.value = ''; });
+    document.getElementById('addPropModal').classList.add('open');
+  }
+
+  function addProperty() {
+    const name = document.getElementById('pName').value.trim();
+    if (!name) { document.getElementById('pName').focus(); return; }
+    properties.push({ name, open: false });
+    renderProperties();
+    closeM('addPropModal');
+    // switch to properties tab if not already
+    document.querySelectorAll('.bs-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelector('[onclick="switchTab(\'properties\',this)"]').classList.add('active');
+    document.getElementById('tab-properties').classList.add('active');
+  }
+
+  function showSaved() {
+    const btn = event.target;
+    const orig = btn.textContent;
+    btn.textContent = '✓ Saved!';
+    btn.style.background = '#22c55e';
+    setTimeout(() => { btn.textContent = orig; btn.style.background = ''; }, 2000);
+  }
+
+  function switchTab(tab, el) {
+    document.querySelectorAll('.bs-tab').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    el.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+  }
+
+  function closeM(id)    { document.getElementById(id).classList.remove('open'); }
+  function closeOut(e,id){ if(e.target===document.getElementById(id)) closeM(id); }
+  function toggleSidebar(){ document.getElementById('sidebar').classList.toggle('open'); document.getElementById('overlay').classList.toggle('open'); }
+  function closeSidebar() { document.getElementById('sidebar').classList.remove('open'); document.getElementById('overlay').classList.remove('open'); }
+
+  renderProperties();
+</script>
+</body>
+</html>
